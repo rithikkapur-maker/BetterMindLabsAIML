@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduMorph AI - The Hyper-Personalized Cognitive Matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        window.SUPABASE_URL = "{{ supabase_url or '' }}";
+        window.SUPABASE_ANON_KEY = "{{ supabase_anon_key or '' }}";
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+        }
+        @keyframes loading-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        /* 3D Dynamic Card-Flip Mechanics Structural Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        /* System Fallbacks for Math and Greek Character Rendering */
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+</head>
+<body :class="themeClasses.bg"
+      class="text-slate-100 min-h-screen font-sans antialiased selection:bg-purple-500 selection:text-white transition-colors duration-500"
+      x-data="{ 
+        // Global Theme State: 'midnight', 'matrix', 'solar', 'neon', 'abyss', 'aurora'
+        activeTheme: 'midnight',
+
+        // Global Workspaces Application Configuration States
+        activeMode: 'alchemist', // 'alchemist', 'forge', or 'research'
+        topic: '', 
+        openModeDropdown: false, // Dropdown state control
+
+        // Supabase & Authentication States
+        supabase: null,
+        user: null,
+        session: null,
+        showAuthModal: false,
+        authTab: 'login', // 'login' or 'signup'
+        authEmail: '',
+        authPassword: '',
+        authName: '',
+        authError: '',
+        authSuccess: '',
+        authLoading: false,
+        supabaseUrlInput: '',
+        supabaseAnonKeyInput: '',
+        showSupabaseConfig: false,
+        
+        // Mode 1: Concept Alchemist States
+        profile: 'ELI5', 
+        depthIndex: 1,
+        depths: ['High School', 'Undergrad', 'Post-Grad Specialist'],
+        loadingAlchemist: false,
+        alchemistResult: null,
+        errorAlchemist: '',
+        
+        // Live Dynamic Interactive Graph Sliders Registry
+        graphSliders: {},
+
+        // Editable Graph Axis Bounds
+        graphBounds: {
+            xMin: 0,
+            xMax: 10,
+            yMin: -10,
+            yMax: 10
+        },
+        
+        // Mode 2: Dynamic Evaluation Forge States
+        evalType: 'Quiz', // 'Flashcards', 'Quiz', 'Exam'
+        difficulty: 'Intermediate',
+        loadingForge: false,
+        forgeItems: [],
+        errorForge: '',
+        
+        // Predictive Gap Targeting State Registries
+        sessionWeakGaps: [],
+        
+        // Live Session Progress Metrics Mechanics State Management
+        quizAnswers: {}, // index -> chosen Option string/index
+        quizSubmitted: {}, // index -> boolean
+        totalCorrect: 0,
+        totalAnswered: 0,
+
+        // Mode 3: Research Brief Forge States
+        loadingResearch: false,
+        researchResult: null,
+        errorResearch: '',
+        
+        get currentDepth() { return this.depths[this.depthIndex]; },
+        get performancePercentage() {
+            if(this.totalAnswered === 0) return 0;
+            return Math.round((this.totalCorrect / this.totalAnswered) * 100);
+        },
+
+        // Theme Palette Configuration Dynamic Engine Mapping
+        get themeClasses() {
+            return {
+                'midnight': {
+                    bg: 'bg-slate-950',
+                    textGrad: 'from-purple-400 via-pink-400 to-cyan-400',
+                    accentText: 'text-purple-300',
+                    accentTextAlt: 'text-cyan-400',
+                    accentBgAlt: 'bg-cyan-950/50 border-cyan-800',
+                    activeButton: 'bg-purple-600 border-purple-500 shadow-purple-900/40 text-white',
+                    primaryGrad: 'from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500',
+                    accentBorder: 'border-purple-500/20',
+                    accentBgGrad: 'from-slate-950 to-purple-950/10',
+                    sliderAccent: 'accent-cyan-400',
+                    focusBorder: 'focus:border-purple-500',
+                    chartLine: '#c084fc',
+                    chartAxis: '#22d3ee',
+                    activeRecallTag: 'text-purple-400',
+                    cardAccentBorder: 'border-purple-500/30',
+                    takeAwayBullet: 'bg-purple-900/60 border-purple-500/30 text-purple-300'
+                },
+                'matrix': {
+                    bg: 'bg-zinc-950',
+                    textGrad: 'from-emerald-400 via-green-500 to-teal-400',
+                    accentText: 'text-emerald-300',
+                    accentTextAlt: 'text-teal-400',
+                    accentBgAlt: 'bg-teal-950/50 border-teal-800',
+                    activeButton: 'bg-emerald-600 border-emerald-500 shadow-emerald-900/40 text-white',
+                    primaryGrad: 'from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500',
+                    accentBorder: 'border-emerald-500/20',
+                    accentBgGrad: 'from-slate-950 to-emerald-950/10',
+                    sliderAccent: 'accent-emerald-400',
+                    focusBorder: 'focus:border-emerald-500',
+                    chartLine: '#34d399',
+                    chartAxis: '#2dd4bf',
+                    activeRecallTag: 'text-emerald-400',
+                    cardAccentBorder: 'border-emerald-500/30',
+                    takeAwayBullet: 'bg-emerald-900/60 border-emerald-500/30 text-emerald-300'
+                },
+                'solar': {
+                    bg: 'bg-stone-950',
+                    textGrad: 'from-amber-400 via-orange-500 to-rose-400',
+                    accentText: 'text-amber-300',
+                    accentTextAlt: 'text-rose-400',
+                    accentBgAlt: 'bg-rose-950/50 border-rose-800',
+                    activeButton: 'bg-amber-600 border-amber-500 shadow-amber-900/40 text-white',
+                    primaryGrad: 'from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500',
+                    accentBorder: 'border-amber-500/20',
+                    accentBgGrad: 'from-slate-950 to-amber-950/10',
+                    sliderAccent: 'accent-rose-400',
+                    focusBorder: 'focus:border-amber-500',
+                    chartLine: '#fbbf24',
+                    chartAxis: '#f43f5e',
+                    activeRecallTag: 'text-amber-400',
+                    cardAccentBorder: 'border-amber-500/30',
+                    takeAwayBullet: 'bg-amber-900/60 border-amber-500/30 text-amber-300'
+                },
+                'neon': {
+                    bg: 'bg-slate-950',
+                    textGrad: 'from-pink-500 via-fuchsia-400 to-yellow-300',
+                    accentText: 'text-pink-300',
+                    accentTextAlt: 'text-yellow-400',
+                    accentBgAlt: 'bg-yellow-950/50 border-yellow-800',
+                    activeButton: 'bg-pink-600 border-pink-500 shadow-pink-900/40 text-white',
+                    primaryGrad: 'from-pink-600 to-yellow-600 hover:from-pink-500 hover:to-yellow-500',
+                    accentBorder: 'border-pink-500/20',
+                    accentBgGrad: 'from-slate-950 to-pink-950/10',
+                    sliderAccent: 'accent-yellow-400',
+                    focusBorder: 'focus:border-pink-500',
+                    chartLine: '#f472b6',
+                    chartAxis: '#facc15',
+                    activeRecallTag: 'text-pink-400',
+                    cardAccentBorder: 'border-pink-500/30',
+                    takeAwayBullet: 'bg-pink-900/60 border-pink-500/30 text-pink-300'
+                },
+                'abyss': {
+                    bg: 'bg-blue-950',
+                    textGrad: 'from-blue-400 via-teal-400 to-sky-300',
+                    accentText: 'text-blue-300',
+                    accentTextAlt: 'text-sky-400',
+                    accentBgAlt: 'bg-sky-950/50 border-sky-800',
+                    activeButton: 'bg-blue-600 border-blue-500 shadow-blue-900/40 text-white',
+                    primaryGrad: 'from-blue-600 to-teal-600 hover:from-blue-500 hover:to-teal-500',
+                    accentBorder: 'border-blue-500/20',
+                    accentBgGrad: 'from-blue-950 to-teal-950/10',
+                    sliderAccent: 'accent-sky-400',
+                    focusBorder: 'focus:border-blue-500',
+                    chartLine: '#60a5fa',
+                    chartAxis: '#38bdf8',
+                    activeRecallTag: 'text-blue-400',
+                    cardAccentBorder: 'border-blue-500/30',
+                    takeAwayBullet: 'bg-blue-900/60 border-blue-500/30 text-blue-300'
+                },
+                'aurora': {
+                    bg: 'bg-neutral-950',
+                    textGrad: 'from-indigo-400 via-purple-400 to-lime-400',
+                    accentText: 'text-indigo-300',
+                    accentTextAlt: 'text-lime-400',
+                    accentBgAlt: 'bg-lime-950/50 border-lime-800',
+                    activeButton: 'bg-indigo-600 border-indigo-500 shadow-indigo-900/40 text-white',
+                    primaryGrad: 'from-indigo-600 to-lime-600 hover:from-indigo-500 hover:to-lime-500',
+                    accentBorder: 'border-indigo-500/20',
+                    accentBgGrad: 'from-neutral-950 to-indigo-950/10',
+                    sliderAccent: 'accent-lime-400',
+                    focusBorder: 'focus:border-indigo-500',
+                    chartLine: '#818cf8',
+                    chartAxis: '#a3e635',
+                    activeRecallTag: 'text-indigo-400',
+                    cardAccentBorder: 'border-indigo-500/30',
+                    takeAwayBullet: 'bg-indigo-900/60 border-indigo-500/30 text-indigo-300'
+                }
+            }[this.activeTheme];
+        },
+
+        initSupabase() {
+            let url = window.SUPABASE_URL || localStorage.getItem('SUPABASE_URL') || '';
+            let key = window.SUPABASE_ANON_KEY || localStorage.getItem('SUPABASE_ANON_KEY') || '';
+            
+            this.supabaseUrlInput = url;
+            this.supabaseAnonKeyInput = key;
+
+            if (window.supabase && url && key && url !== 'None') {
+                try {
+                    this.supabase = window.supabase.createClient(url, key);
+                    this.supabase.auth.getSession().then(({ data: { session } }) => {
+                        this.session = session;
+                        this.user = session?.user || null;
+                    });
+                    this.supabase.auth.onAuthStateChange((_event, session) => {
+                        this.session = session;
+                        this.user = session?.user || null;
+                        if (session?.user) {
+                            this.showAuthModal = false;
+                        }
+                    });
+                } catch(e) {
+                    console.error('Supabase init failure:', e);
+                }
+            }
+        },
+
+        saveSupabaseConfig() {
+            if (this.supabaseUrlInput && this.supabaseAnonKeyInput) {
+                localStorage.setItem('SUPABASE_URL', this.supabaseUrlInput);
+                localStorage.setItem('SUPABASE_ANON_KEY', this.supabaseAnonKeyInput);
+                window.SUPABASE_URL = this.supabaseUrlInput;
+                window.SUPABASE_ANON_KEY = this.supabaseAnonKeyInput;
+                this.initSupabase();
+                this.authSuccess = 'Supabase credentials updated successfully!';
+                this.authError = '';
+            } else {
+                this.authError = 'Please fill both Supabase URL and Anon Key.';
+            }
+        },
+
+        async signInWithGoogle() {
+            this.authError = '';
+            this.authSuccess = '';
+            if (!this.supabase) {
+                this.authError = 'Supabase client is not configured yet. Please configure SUPABASE_URL and SUPABASE_ANON_KEY below.';
+                this.showSupabaseConfig = true;
+                return;
+            }
+            this.authLoading = true;
+            try {
+                const { error } = await this.supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                this.authError = err.message || 'Google login failed.';
+            } finally {
+                this.authLoading = false;
+            }
+        },
+
+        async handleEmailAuth() {
+            this.authError = '';
+            this.authSuccess = '';
+            if (!this.supabase) {
+                this.authError = 'Supabase client is not configured yet. Please configure SUPABASE_URL and SUPABASE_ANON_KEY below.';
+                this.showSupabaseConfig = true;
+                return;
+            }
+            if (!this.authEmail || !this.authPassword) {
+                this.authError = 'Please enter both email and password.';
+                return;
+            }
+            if (this.authTab === 'signup' && !this.authName) {
+                this.authError = 'Please enter your full name.';
+                return;
+            }
+
+            this.authLoading = true;
+            try {
+                if (this.authTab === 'signup') {
+                    const { data, error } = await this.supabase.auth.signUp({
+                        email: this.authEmail,
+                        password: this.authPassword,
+                        options: {
+                            data: {
+                                full_name: this.authName
+                            }
+                        }
+                    });
+                    if (error) throw error;
+                    if (data.user && !data.session) {
+                        this.authSuccess = 'Account registered! Please check your email inbox to verify your account.';
+                    } else {
+                        this.authSuccess = 'Account created successfully!';
+                        this.showAuthModal = false;
+                    }
+                } else {
+                    const { data, error } = await this.supabase.auth.signInWithPassword({
+                        email: this.authEmail,
+                        password: this.authPassword
+                    });
+                    if (error) throw error;
+                    this.showAuthModal = false;
+                }
+            } catch (err) {
+                this.authError = err.message || 'Authentication operation failed.';
+            } finally {
+                this.authLoading = false;
+            }
+        },
+
+        async handleSignOut() {
+            if (this.supabase) {
+                await this.supabase.auth.signOut();
+            }
+            this.user = null;
+            this.session = null;
+        },
+
+        // SAFE MATHEMATICAL EXPRESSION EVALUATOR METHOD
+        evaluateGraphExpression(expression, x, variables) {
+            try {
+                const context = {
+                    x: x,
+                    ...variables,
+                    Math: Math,
+                    sin: Math.sin,
+                    cos: Math.cos,
+                    tan: Math.tan,
+                    pow: Math.pow,
+                    sqrt: Math.sqrt,
+                    abs: Math.abs,
+                    exp: Math.exp,
+                    log: Math.log,
+                    pi: Math.PI,
+                    PI: Math.PI,
+                    e: Math.E
+                };
+                
+                const keys = Object.keys(context);
+                const values = Object.values(context);
+                const fn = new Function(...keys, `return (${expression});`);
+                return fn(...values);
+            } catch (err) {
+                return NaN;
+            }
+        },
+
+        // Zoom functionality centered around current plot view coordinates
+        zoom(factor) {
+            const currentXMin = parseFloat(this.graphBounds.xMin);
+            const currentXMax = parseFloat(this.graphBounds.xMax);
+            const currentYMin = parseFloat(this.graphBounds.yMin);
+            const currentYMax = parseFloat(this.graphBounds.yMax);
+            
+            const xCenter = (currentXMin + currentXMax) / 2;
+            const yCenter = (currentYMin + currentYMax) / 2;
+            
+            const halfXRange = ((currentXMax - currentXMin) / 2) * factor;
+            const halfYRange = ((currentYMax - currentYMin) / 2) * factor;
+            
+            this.graphBounds.xMin = parseFloat((xCenter - halfXRange).toFixed(4));
+            this.graphBounds.xMax = parseFloat((xCenter + halfXRange).toFixed(4));
+            this.graphBounds.yMin = parseFloat((yCenter - halfYRange).toFixed(4));
+            this.graphBounds.yMax = parseFloat((yCenter + halfYRange).toFixed(4));
+        },
+
+        // Math-to-screen coordinate resolvers for the X & Y interactive origin axes
+        get originX() {
+            const minX = parseFloat(this.graphBounds.xMin);
+            const maxX = parseFloat(this.graphBounds.xMax);
+            const xRange = (maxX - minX) || 1;
+            const marginX = 60;
+            const chartWidth = 380;
+            if (minX <= 0 && 0 <= maxX) {
+                return marginX + ((0 - minX) / xRange) * chartWidth;
+            }
+            return null;
+        },
+
+        get originY() {
+            const minY = parseFloat(this.graphBounds.yMin);
+            const maxY = parseFloat(this.graphBounds.yMax);
+            const yRange = (maxY - minY) || 1;
+            const marginY = 40;
+            const chartHeight = 200;
+            if (minY <= 0 && 0 <= maxY) {
+                return (marginY + chartHeight) - ((0 - minY) / yRange) * chartHeight;
+            }
+            return null;
+        },
+
+        // DYNAMIC SVG COORDINATE GENERATOR (AUTO-SCALING PLOT SYSTEM)
+        get dynamicPoints() {
+            if (!this.alchemistResult || !this.alchemistResult.interactive_graph) return [];
+            const graph = this.alchemistResult.interactive_graph;
+            const minX = parseFloat(this.graphBounds.xMin);
+            const maxX = parseFloat(this.graphBounds.xMax);
+            const stepX = parseFloat(graph.xAxis.step) || (maxX - minX) / 100;
+            const expression = graph.expression;
+            
+            let pts = [];
+            let yVals = [];
+            
+            for (let x = minX; x <= maxX; x += stepX) {
+                let y = this.evaluateGraphExpression(expression, x, this.graphSliders);
+                if (!isNaN(y) && isFinite(y)) {
+                    yVals.push({ x: x, y: y });
+                }
+            }
+            
+            if (yVals.length === 0) return [];
+            
+            const xRange = (maxX - minX) || 1;
+            
+            const minY = parseFloat(this.graphBounds.yMin);
+            const maxY = parseFloat(this.graphBounds.yMax);
+            const yRange = (maxY - minY) || 1;
+            
+            const marginX = 60;
+            const marginY = 40;
+            const chartWidth = 380;
+            const chartHeight = 200;
+            
+            return yVals.map(p => {
+                let screenX = marginX + ((p.x - minX) / xRange) * chartWidth;
+                let screenY = (marginY + chartHeight) - ((p.y - minY) / yRange) * chartHeight;
+                return { mathX: p.x, mathY: p.y, screenX: screenX, screenY: screenY };
+            });
+        },
+
+        get dynamicPathD() {
+            const pts = this.dynamicPoints;
+            if (pts.length === 0) return '';
+            const marginX = 60;
+            const marginY = 40;
+            const chartWidth = 380;
+            const chartHeight = 200;
+            const minXBound = marginX;
+            const maxXBound = marginX + chartWidth;
+            const minYBound = marginY;
+            const maxYBound = marginY + chartHeight;
+
+            let path = '';
+            let first = true;
+
+            pts.forEach(pt => {
+                if (pt.screenY >= minYBound && pt.screenY <= maxYBound && pt.screenX >= minXBound && pt.screenX <= maxXBound) {
+                    path += `${first ? 'M' : 'L'} ${pt.screenX} ${pt.screenY} `;
+                    first = false;
+                } else {
+                    first = true;
+                }
+            });
+            return path.trim();
+        },
+
+        get dynamicYLabels() {
+            if (!this.alchemistResult || !this.alchemistResult.interactive_graph) return [];
+            const minY = parseFloat(this.graphBounds.yMin);
+            const maxY = parseFloat(this.graphBounds.yMax);
+            const range = maxY - minY;
+            
+            const marginY = 40;
+            const chartHeight = 200;
+            
+            let labels = [];
+            for (let i = 0; i <= 4; i++) {
+                let val = minY + (range * (i / 4));
+                let screenY = (marginY + chartHeight) - (i / 4) * chartHeight;
+                labels.push({ value: val.toFixed(2), y: screenY });
+            }
+            return labels;
+        },
+
+        get dynamicXLabels() {
+            if (!this.alchemistResult || !this.alchemistResult.interactive_graph) return [];
+            const minX = parseFloat(this.graphBounds.xMin);
+            const maxX = parseFloat(this.graphBounds.xMax);
+            const range = maxX - minX;
+            
+            const marginX = 60;
+            const chartWidth = 380;
+            
+            let labels = [];
+            for (let i = 0; i <= 4; i++) {
+                let val = minX + (range * (i / 4));
+                let screenX = marginX + (i / 4) * chartWidth;
+                labels.push({ value: val.toFixed(2), x: screenX });
+            }
+            return labels;
+        },
+        
+        async triggerMorph() {
+            if(!this.topic.trim()) {
+                this.errorAlchemist = 'Please enter a target learning concept.';
+                return;
+            }
+            this.errorAlchemist = '';
+            this.loadingAlchemist = true;
+            this.alchemistResult = null;
+            this.graphSliders = {};
+            try {
+                let response = await fetch('/api/morph-concept', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        topic: this.topic, 
+                        profile: this.profile, 
+                        depth: this.currentDepth 
+                    })
+                });
+                let data = await response.json();
+                if(response.ok) {
+                    this.alchemistResult = data;
+                    if (data.interactive_graph && data.interactive_graph.sliders) {
+                        data.interactive_graph.sliders.forEach(slider => {
+                            this.graphSliders[slider.variable] = parseFloat(slider.value);
+                        });
+                        this.graphBounds.xMin = parseFloat(data.interactive_graph.xAxis.min);
+                        this.graphBounds.xMax = parseFloat(data.interactive_graph.xAxis.max);
+                        this.graphBounds.yMin = parseFloat(data.interactive_graph.yAxis.min);
+                        this.graphBounds.yMax = parseFloat(data.interactive_graph.yAxis.max);
+                    }
+                } else {
+                    this.errorAlchemist = data.error || 'A transformation anomaly occurred.';
+                }
+            } catch (e) {
+                this.errorAlchemist = 'Network breakdown. Ensure Vercel environment routines are stable.';
+            } finally {
+                this.loadingAlchemist = false;
+            }
+        },
+
+        async triggerForge() {
+            if(!this.topic.trim()) {
+                this.errorForge = 'Please define a topic base inside the workspace input first.';
+                return;
+            }
+            this.errorForge = '';
+            this.loadingForge = true;
+            this.forgeItems = [];
+            this.quizAnswers = {};
+            this.quizSubmitted = {};
+            this.totalCorrect = 0;
+            this.totalAnswered = 0;
+            try {
+                let response = await fetch('/api/generate-evaluation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        topic: this.topic, 
+                        type: this.evalType, 
+                        difficulty: this.difficulty,
+                        gap_history: this.sessionWeakGaps
+                    })
+                });
+                let data = await response.json();
+                if(response.ok && data.items) {
+                    this.forgeItems = data.items.map(item => ({ ...item, flipped: false }));
+                } else {
+                    this.errorForge = data.error || 'An evaluation parsing matrix failure occurred.';
+                }
+            } catch(e) {
+                this.errorForge = 'Connection to Evaluation Forge runtime execution disrupted.';
+            } finally {
+                this.loadingForge = false;
+            }
+        },
+
+        async triggerResearch() {
+            if(!this.topic.trim()) {
+                this.errorResearch = 'Please enter a target research topic.';
+                return;
+            }
+            this.errorResearch = '';
+            this.loadingResearch = true;
+            this.researchResult = null;
+            try {
+                let response = await fetch('/api/generate-research', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        topic: this.topic, 
+                        profile: this.profile, 
+                        depth: this.currentDepth 
+                    })
+                });
+                let data = await response.json();
+                if(response.ok) {
+                    this.researchResult = data;
+                } else {
+                    this.errorResearch = data.error || 'A research assembly failure occurred.';
+                }
+            } catch (e) {
+                this.errorResearch = 'Network connection to the Research Director was lost.';
+            } finally {
+                this.loadingResearch = false;
+            }
+        },
+
+        selectOption(qIndex, optIndex, correctIndex) {
+            if(this.quizSubmitted[qIndex]) return;
+            this.quizAnswers[qIndex] = optIndex;
+            this.quizSubmitted[qIndex] = true;
+            this.totalAnswered++;
+            if(optIndex === correctIndex) {
+                this.totalCorrect++;
+            } else {
+                let questionText = this.forgeItems[qIndex].question;
+                if(!this.sessionWeakGaps.includes(questionText)) {
+                    this.sessionWeakGaps.push(questionText);
+                }
+            }
+        }
+    }"
+    x-init="initSupabase()">
+
+    <div class="fixed top-4 right-4 flex items-center gap-3 z-50">
+        <template x-if="user">
+            <div class="flex items-center gap-2 bg-slate-900/90 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-2xl">
+                <div class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold text-white uppercase" x-text="(user.user_metadata?.full_name || user.email || 'U').charAt(0)"></div>
+                <span class="text-xs font-medium text-slate-200 hidden sm:inline" x-text="user.user_metadata?.full_name || user.email"></span>
+                <button @click="handleSignOut()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2 py-0.5 rounded bg-rose-950/40 border border-rose-800/40 transition-all">Sign Out</button>
+            </div>
+        </template>
+        <template x-if="!user">
+            <button @click="showAuthModal = true" class="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-lg transition-all border border-purple-400/30">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                <span>Sign In / Register</span>
+            </button>
+        </template>
+
+        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-white/10 rounded-xl p-1 backdrop-blur-md shadow-2xl max-w-[calc(100vw-2rem)] overflow-x-auto">
+            <button @click="activeTheme = 'midnight'" :class="activeTheme === 'midnight' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap">🌌 Midnight</button>
+            <button @click="activeTheme = 'matrix'" :class="activeTheme === 'matrix' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap">📟 Matrix</button>
+            <button @click="activeTheme = 'solar'" :class="activeTheme === 'solar' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap">☀️ Solar</button>
+            <button @click="activeTheme = 'neon'" :class="activeTheme === 'neon' ? 'bg-pink-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap">⚡ Neon</button>
+            <button @click="activeTheme = 'abyss'" :class="activeTheme === 'abyss' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap">🌊 Abyss</button>
+            <button @click="activeTheme = 'aurora'" :class="activeTheme === 'aurora' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap">🌌 Aurora</button>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <header class="text-center mb-12 relative">
+            <div class="pt-12 md:pt-4">
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r bg-clip-text text-transparent transition-all duration-300" :class="themeClasses.textGrad">
+                    EduMorph AI
+                </h1>
+                <p class="text-slate-400 mt-3 text-lg max-w-2xl mx-auto">
+                    The Hyper-Personalized Cognitive Matrix & Dynamic Learning Engine. Adapt abstract intelligence directly to your unique neural paradigm.
+                </p>
+            </div>
+
+            <div class="flex justify-center mt-8 relative" @click.away="openModeDropdown = false">
+                <div class="relative inline-block text-left">
+                    <button @click="openModeDropdown = !openModeDropdown"
+                            :class="themeClasses.activeButton"
+                            class="px-8 py-3 rounded-xl font-bold border transition-all text-sm tracking-wide flex items-center gap-2.5 shadow-lg">
+                        <span x-text="activeMode === 'alchemist' ? '🌀 Mode 1: Concept Alchemist' : activeMode === 'forge' ? '⚒️ Mode 2: Evaluation Forge' : '🔬 Mode 3: Research Brief'"></span>
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="openModeDropdown ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <div x-show="openModeDropdown"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="transform opacity-0 scale-95"
+                         x-transition:enter-end="transform opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="transform opacity-100 scale-100"
+                         x-transition:leave-end="transform opacity-0 scale-95"
+                         class="absolute left-1/2 -translate-x-1/2 mt-2 w-64 rounded-2xl glass-panel shadow-2xl p-2 z-50 bg-slate-900/95 border border-white/10"
+                         style="display: none;">
+                        <button @click="activeMode = 'alchemist'; openModeDropdown = false;"
+                                :class="activeMode === 'alchemist' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+                                class="w-full text-left px-4 py-3 rounded-xl font-semibold text-xs flex items-center gap-3 transition-colors">
+                            <span class="text-base">🌀</span>
+                            <div>
+                                <div class="font-bold">Concept Alchemist</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Dynamic Explanations & Graphs</div>
+                            </div>
+                        </button>
+                        <button @click="activeMode = 'forge'; openModeDropdown = false;"
+                                :class="activeMode === 'forge' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+                                class="w-full text-left px-4 py-3 rounded-xl font-semibold text-xs flex items-center gap-3 transition-colors mt-1">
+                            <span class="text-base">⚒️</span>
+                            <div>
+                                <div class="font-bold">Evaluation Forge</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Quizzes, Exams & Flashcards</div>
+                            </div>
+                        </button>
+                        <button @click="activeMode = 'research'; openModeDropdown = false;"
+                                :class="activeMode === 'research' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+                                class="w-full text-left px-4 py-3 rounded-xl font-semibold text-xs flex items-center gap-3 transition-colors mt-1">
+                            <span class="text-base">🔬</span>
+                            <div>
+                                <div class="font-bold">Research Brief</div>
+                                <div class="text-[10px] text-slate-400 font-normal">Citations & Critical Inquiry</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="glass-panel p-6 rounded-2xl shadow-2xl mb-8">
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Concept Matrix Input</label>
+            <div class="relative">
+                <input type="text"
+                       x-model="topic"
+                       @keydown.enter="activeMode === 'alchemist' ? triggerMorph() : activeMode === 'forge' ? triggerForge() : triggerResearch()"
+                       placeholder="e.g., Quantum Entanglement, Pointer Arithmetic in C++, Macroeconomics"
+                       :class="themeClasses.focusBorder"
+                       class="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none transition-colors text-base" />
+            </div>
+        </div>
+
+        <div x-show="activeMode === 'alchemist'" class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+            <div class="lg:col-span-2 glass-panel p-8 rounded-2xl shadow-2xl space-y-6">
+                <h2 class="text-xl font-bold flex items-center gap-2" :class="themeClasses.accentText">
+                    <span>⚡</span> Engine Customizer
+                </h2>
+                <hr class="border-white/10" />
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Cognitive Lens Profile</label>
+                    <select x-model="profile" :class="themeClasses.focusBorder" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none transition-colors">
+                        <option value="ELI5">👶 Explain Like I'm 5 (ELI5)</option>
+                        <option value="Socratic Cyberpunk">🤖 Socratic Cyberpunk Architect</option>
+                        <option value="Feynman Intuitive">🧪 Feynman Intuitive Model</option>
+                        <option value="First-Principles Physics">⚛️ First-Principles Physics Lens</option>
+                        <option value="Executive Briefing">💼 High-Level Executive Briefing</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">
+                        US Academic Depth Tier: <span class="font-bold" :class="themeClasses.accentTextAlt" x-text="currentDepth"></span>
+                    </label>
+                    <input type="range" min="0" max="2" step="1" x-model="depthIndex" class="w-full cursor-pointer" :class="themeClasses.sliderAccent" />
+                    <div class="flex justify-between text-xs text-slate-500 mt-1 font-mono">
+                        <span>High School</span>
+                        <span>Undergrad</span>
+                        <span>Post-Grad</span>
+                    </div>
+                </div>
+                <button @click="triggerMorph()"
+                        :disabled="loadingAlchemist"
+                        :class="themeClasses.primaryGrad"
+                        class="w-full py-3.5 rounded-xl font-extrabold text-white shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm tracking-wide">
+                    <span x-show="!loadingAlchemist">Transform Concept Matrix</span>
+                    <span x-show="loadingAlchemist" class="flex items-center gap-2">
+                        <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Synthesizing Matrix...
+                    </span>
+                </button>
+                <div x-show="errorAlchemist" class="p-4 rounded-xl bg-rose-950/50 border border-rose-800/50 text-rose-300 text-xs leading-relaxed" x-text="errorAlchemist"></div>
+            </div>
+
+            <div class="lg:col-span-3 space-y-6">
+                <div x-show="loadingAlchemist" class="glass-panel p-8 rounded-2xl shadow-2xl space-y-4">
+                    <div class="h-6 w-1/3 shimmer rounded-lg"></div>
+                    <div class="h-20 shimmer rounded-xl"></div>
+                    <div class="h-4 w-2/3 shimmer rounded-lg"></div>
+                </div>
+
+                <div x-show="!loadingAlchemist && alchemistResult" class="space-y-6" style="display: none;">
+                    <div class="glass-panel p-8 rounded-2xl shadow-2xl space-y-4">
+                        <h3 class="text-xl font-bold flex items-center gap-2" :class="themeClasses.accentTextAlt">Morphed Conceptual Breakdown</h3>
+                        <div class="text-slate-200 leading-relaxed text-base space-y-4 whitespace-pre-line" x-html="alchemistResult?.morphed_explanation"></div>
+                    </div>
+
+                    <div class="glass-panel p-8 rounded-2xl shadow-2xl bg-gradient-to-br" :class="'from-slate-950 to-' + (activeTheme === 'midnight' ? 'purple-950/10' : activeTheme === 'matrix' ? 'emerald-950/10' : activeTheme === 'solar' ? 'amber-950/10' : activeTheme === 'neon' ? 'pink-950/10' : activeTheme === 'abyss' ? 'blue-950/10' : 'indigo-950/10')">
+                        <h4 class="text-xs font-extrabold tracking-wider uppercase mb-4 text-slate-400">Essential Pillars & Conceptual Takeaways</h4>
+                        <div class="grid grid-cols-1 gap-3">
+                            <template x-for="(takeaway, idx) in alchemistResult?.takeaways" :key="idx">
+                                <div class="p-3.5 rounded-xl border text-xs font-medium leading-relaxed flex items-start gap-3" :class="themeClasses.takeAwayBullet">
+                                    <span class="font-bold text-sm" x-text="idx + 1"></span>
+                                    <span x-text="takeaway"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <template x-if="alchemistResult?.interactive_graph">
+                        <div class="glass-panel p-6 rounded-2xl shadow-2xl border border-white/10">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-sm font-bold flex items-center gap-2" :class="themeClasses.accentText">
+                                    <span>📈</span> Dynamic Interactive Concept Simulation
+                                </h4>
+                                <span class="text-xs font-mono text-slate-400" x-text="alchemistResult.interactive_graph.title"></span>
+                            </div>
+
+                            <div class="relative bg-slate-900/90 rounded-xl p-4 border border-white/5 overflow-hidden">
+                                <svg class="w-full h-64 overflow-visible" viewBox="0 0 500 280">
+                                    <defs>
+                                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                                        </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                                    <line x1="60" y1="240" x2="440" y2="240" stroke="#475569" stroke-width="1.5" />
+                                    <line x1="60" y1="40" x2="60" y2="240" stroke="#475569" stroke-width="1.5" />
+
+                                    <line x-show="originX !== null" :x1="originX" y1="40" :x2="originX" y2="240" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3" />
+                                    <line x-show="originY !== null" x1="60" :y1="originY" x2="440" :y2="originY" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3" />
+
+                                    <template x-for="lbl in dynamicYLabels">
+                                        <g>
+                                            <line x1="55" :y1="lbl.y" x2="60" :y2="lbl.y" stroke="#64748b" stroke-width="1" />
+                                            <text x="50" :y="lbl.y + 4" text-anchor="end" fill="#94a3b8" font-size="9" class="font-mono" x-text="lbl.value"></text>
+                                        </g>
+                                    </template>
+
+                                    <template x-for="lbl in dynamicXLabels">
+                                        <g>
+                                            <line :x1="lbl.x" y1="240" :x2="lbl.x" y2="245" stroke="#64748b" stroke-width="1" />
+                                            <text :x="lbl.x" y="258" text-anchor="middle" fill="#94a3b8" font-size="9" class="font-mono" x-text="lbl.value"></text>
+                                        </g>
+                                    </template>
+
+                                    <path :d="dynamicPathD" fill="none" :stroke="themeClasses.chartLine" stroke-width="2.5" stroke-linecap="round" />
+
+                                    <text x="250" y="275" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="bold" x-text="alchemistResult.interactive_graph.xAxis?.label || 'x'"></text>
+                                    <text x="18" y="140" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="bold" transform="rotate(-90 18 140)" x-text="alchemistResult.interactive_graph.yAxis?.label || 'y'"></text>
+                                </svg>
+
+                                <div class="absolute top-3 right-3 flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-lg border border-white/10 text-xs">
+                                    <button @click="zoom(0.8)" class="px-2 py-0.5 hover:bg-white/10 rounded font-bold text-slate-300" title="Zoom In">+</button>
+                                    <button @click="zoom(1.25)" class="px-2 py-0.5 hover:bg-white/10 rounded font-bold text-slate-300" title="Zoom Out">-</button>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 space-y-4 bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                                <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Live Parameter Controllers</div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <template x-for="slider in alchemistResult.interactive_graph.sliders" :key="slider.variable">
+                                        <div class="space-y-1">
+                                            <div class="flex justify-between text-xs font-semibold">
+                                                <span class="text-slate-300" x-text="slider.label || slider.variable"></span>
+                                                <span :class="themeClasses.accentText" x-text="graphSliders[slider.variable]"></span>
+                                            </div>
+                                            <input type="range"
+                                                   :min="slider.min"
+                                                   :max="slider.max"
+                                                   :step="slider.step"
+                                                   x-model.number="graphSliders[slider.variable]"
+                                                   class="w-full cursor-pointer"
+                                                   :class="themeClasses.sliderAccent" />
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="!loadingAlchemist && !alchemistResult" class="glass-panel p-12 rounded-2xl text-center space-y-4 border-dashed border-white/5">
+                    <div class="text-5xl text-slate-700">🌀</div>
+                    <h3 class="text-xl font-bold text-slate-400">Concept Matrix Awaiting Input</h3>
+                    <p class="text-sm text-slate-500 max-w-md mx-auto">Define a target concept in the workspace bar above, select your preferred cognitive lens model and academic depth, and initiate transformation.</p>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeMode === 'forge'" class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start" style="display: none;">
+            <div class="lg:col-span-2 glass-panel p-8 rounded-2xl shadow-2xl space-y-6">
+                <h2 class="text-xl font-bold flex items-center gap-2" :class="themeClasses.accentText">
+                    <span>⚒️</span> Evaluation Customizer
+                </h2>
+                <hr class="border-white/10" />
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Evaluation Format</label>
+                    <div class="grid grid-cols-3 gap-2 p-1 bg-slate-900/80 rounded-xl border border-white/10">
+                        <button @click="evalType = 'Flashcards'" :class="evalType === 'Flashcards' ? themeClasses.activeButton : 'text-slate-400 hover:text-white'" class="py-2 text-xs font-bold rounded-lg transition-all">Flashcards</button>
+                        <button @click="evalType = 'Quiz'" :class="evalType === 'Quiz' ? themeClasses.activeButton : 'text-slate-400 hover:text-white'" class="py-2 text-xs font-bold rounded-lg transition-all">Quiz</button>
+                        <button @click="evalType = 'Exam'" :class="evalType === 'Exam' ? themeClasses.activeButton : 'text-slate-400 hover:text-white'" class="py-2 text-xs font-bold rounded-lg transition-all">Exam</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Difficulty Tier</label>
+                    <select x-model="difficulty" :class="themeClasses.focusBorder" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none transition-colors">
+                        <option value="Beginner">Beginner (Foundational Diagnostic)</option>
+                        <option value="Intermediate">Intermediate (Core Proficiency)</option>
+                        <option value="Advanced">Advanced (Rigorous Mastery)</option>
+                    </select>
+                </div>
+                <button @click="triggerForge()"
+                        :disabled="loadingForge"
+                        :class="themeClasses.primaryGrad"
+                        class="w-full py-3.5 rounded-xl font-extrabold text-white shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm tracking-wide">
+                    <span x-show="!loadingForge">Forge Evaluation Array</span>
+                    <span x-show="loadingForge" class="flex items-center gap-2">
+                        <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Constructing Array...
+                    </span>
+                </button>
+                <div x-show="errorForge" class="p-4 rounded-xl bg-rose-950/50 border border-rose-800/50 text-rose-300 text-xs leading-relaxed" x-text="errorForge"></div>
+            </div>
+
+            <div class="lg:col-span-3 space-y-6">
+                <div x-show="forgeItems.length > 0" class="glass-panel p-4 rounded-2xl flex items-center justify-between border border-white/10">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs uppercase font-bold text-slate-400">Score Metrics:</span>
+                        <span class="text-sm font-extrabold" :class="themeClasses.accentText" x-text="totalCorrect + ' / ' + totalAnswered"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-24 bg-slate-900 rounded-full h-2 overflow-hidden border border-white/10">
+                            <div class="bg-purple-500 h-full transition-all duration-300" :style="'width: ' + performancePercentage + '%'"></div>
+                        </div>
+                        <span class="text-xs font-mono text-slate-300" x-text="performancePercentage + '%'"></span>
+                    </div>
+                </div>
+
+                <div x-show="evalType === 'Flashcards' && forgeItems.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <template x-for="(item, itemIdx) in forgeItems" :key="itemIdx">
+                        <div class="perspective-1000 h-56 cursor-pointer" @click="item.flipped = !item.flipped">
+                            <div class="relative w-full h-full transition-transform duration-500 transform-style-3d rounded-2xl glass-panel border border-white/10 p-6 flex flex-col justify-between"
+                                 :class="item.flipped ? 'rotate-y-180 bg-slate-900/90' : ''">
+                                <div class="backface-hidden absolute inset-0 p-6 flex flex-col justify-between">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">Flashcard Front</span>
+                                    <p class="text-sm font-semibold text-slate-200 leading-relaxed" x-text="item.question"></p>
+                                    <span class="text-[10px] text-slate-500 text-right">Click to flip &rarr;</span>
+                                </div>
+                                <div class="backface-hidden rotate-y-180 absolute inset-0 p-6 flex flex-col justify-between bg-slate-950/95 rounded-2xl">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Answer Explanation</span>
+                                    <p class="text-xs text-slate-300 leading-relaxed overflow-y-auto" x-text="item.explanation"></p>
+                                    <span class="text-[10px] text-slate-500 text-right">&larr; Click to flip back</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="evalType !== 'Flashcards' && forgeItems.length > 0" class="space-y-6">
+                    <template x-for="(item, qIndex) in forgeItems" :key="qIndex">
+                        <div class="glass-panel p-6 rounded-2xl space-y-4 border border-white/10">
+                            <div class="flex items-start justify-between gap-4">
+                                <h4 class="text-sm font-bold text-slate-200" x-text="(qIndex + 1) + '. ' + item.question"></h4>
+                            </div>
+                            <div class="grid grid-cols-1 gap-2">
+                                <template x-for="(opt, optIndex) in item.options" :key="optIndex">
+                                    <button @click="selectOption(qIndex, optIndex, item.correct_index)"
+                                            :disabled="quizSubmitted[qIndex]"
+                                            :class="
+                                                quizSubmitted[qIndex]
+                                                    ? (optIndex === item.correct_index
+                                                        ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 font-bold'
+                                                        : (quizAnswers[qIndex] === optIndex
+                                                            ? 'bg-rose-950/80 border-rose-500 text-rose-200 font-bold'
+                                                            : 'bg-slate-900/40 border-white/5 opacity-50 text-slate-400'))
+                                                    : 'bg-slate-900/60 border-white/10 hover:border-white/20 text-slate-300'
+                                            "
+                                            class="w-full text-left p-3.5 rounded-xl border text-xs transition-all flex items-center justify-between">
+                                        <span x-text="opt"></span>
+                                        <template x-if="quizSubmitted[qIndex] && optIndex === item.correct_index">
+                                            <span class="text-xs text-emerald-400">✓ Correct</span>
+                                        </template>
+                                    </button>
+                                </template>
+                            </div>
+                            <div x-show="quizSubmitted[qIndex]" class="mt-3 p-3 rounded-xl bg-slate-900/80 border border-white/5 text-xs text-slate-400 leading-relaxed" x-text="item.explanation"></div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="!loadingForge && forgeItems.length === 0" class="glass-panel p-12 rounded-2xl text-center space-y-4 border-dashed border-white/5">
+                    <div class="text-5xl text-slate-700">⚒️</div>
+                    <h3 class="text-xl font-bold text-slate-400">Evaluation Array Not Forged</h3>
+                    <p class="text-sm text-slate-500 max-w-md mx-auto">Confirm that your subject guidelines are populated inside the main dashboard panel above, select an analytical framework archetype, and launch the generation engine pipeline.</p>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeMode === 'research'" class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start" style="display: none;">
+            <div class="lg:col-span-2 glass-panel p-8 rounded-2xl shadow-2xl space-y-6">
+                <h2 class="text-xl font-bold flex items-center gap-2" :class="themeClasses.accentText">
+                    <span>🔬</span> Research Director
+                </h2>
+                <hr class="border-white/10" />
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Cognitive Lens Profile</label>
+                    <select x-model="profile" :class="themeClasses.focusBorder" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none transition-colors">
+                        <option value="ELI5">👶 Explain Like I'm 5 (ELI5)</option>
+                        <option value="Socratic Cyberpunk">🤖 Socratic Cyberpunk Architect</option>
+                        <option value="Feynman Intuitive">🧪 Feynman Intuitive Model</option>
+                        <option value="First-Principles Physics">⚛️ First-Principles Physics Lens</option>
+                        <option value="Executive Briefing">💼 High-Level Executive Briefing</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">US Academic Depth Tier</label>
+                    <span class="text-xs font-bold" :class="themeClasses.accentTextAlt" x-text="currentDepth"></span>
+                </div>
+                <button @click="triggerResearch()"
+                        :disabled="loadingResearch"
+                        :class="themeClasses.primaryGrad"
+                        class="w-full py-3.5 rounded-xl font-extrabold text-white shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm tracking-wide">
+                    <span x-show="!loadingResearch">Assemble Research Brief</span>
+                    <span x-show="loadingResearch" class="flex items-center gap-2">
+                        <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Compiling Brief...
+                    </span>
+                </button>
+                <div x-show="errorResearch" class="p-4 rounded-xl bg-rose-950/50 border border-rose-800/50 text-rose-300 text-xs leading-relaxed" x-text="errorResearch"></div>
+            </div>
+
+            <div class="lg:col-span-3 space-y-6">
+                <div x-show="researchResult" class="space-y-6">
+                    <div class="glass-panel p-8 rounded-2xl shadow-2xl space-y-4">
+                        <h3 class="text-2xl font-extrabold text-slate-100" x-text="researchResult?.title"></h3>
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-white/5 text-xs text-slate-300 leading-relaxed space-y-2">
+                            <span class="text-xs uppercase block text-slate-400 font-bold mb-1">Abstract:</span>
+                            <p class="italic" x-text="researchResult?.abstract"></p>
+                        </div>
+                    </div>
+
+                    <template x-for="(section, sIdx) in researchResult?.sections" :key="sIdx">
+                        <div class="glass-panel p-8 rounded-2xl shadow-2xl space-y-3">
+                            <h4 class="text-lg font-bold text-slate-200" x-text="section.heading"></h4>
+                            <p class="text-sm text-slate-300 leading-relaxed whitespace-pre-line" x-text="section.content"></p>
+                        </div>
+                    </template>
+
+                    <div class="glass-panel p-8 rounded-2xl shadow-2xl space-y-4">
+                        <h4 class="text-xs font-extrabold tracking-wider uppercase text-slate-400">Canonical Scientific References</h4>
+                        <div class="space-y-2">
+                            <template x-for="(refItem, rIdx) in researchResult?.references" :key="rIdx">
+                                <div class="text-xs text-slate-400 font-mono bg-slate-900/40 p-2.5 rounded-lg border border-white/5 flex gap-2">
+                                    <span class="text-purple-400 font-bold" x-text="'[' + refItem.key + ']'"></span>
+                                    <span x-text="refItem.text"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-8 rounded-2xl shadow-2xl bg-gradient-to-br" :class="'from-slate-950 to-' + (activeTheme === 'midnight' ? 'purple-950/10' : activeTheme === 'matrix' ? 'emerald-950/10' : activeTheme === 'solar' ? 'amber-950/10' : activeTheme === 'neon' ? 'pink-950/10' : activeTheme === 'abyss' ? 'blue-950/10' : 'indigo-950/10')">
+                        <h4 class="text-xs font-extrabold tracking-wider uppercase mb-3 text-amber-400 flex items-center gap-1.5">
+                            <span>💡</span> Critical Inquiry & Further Investigation
+                        </h4>
+                        <p class="text-xs text-slate-400 mb-4">Advance your conceptual understanding by exploring these targeted follow-up lines of questioning:</p>
+                        <div class="space-y-3">
+                            <template x-for="(qText, qIdx) in researchResult?.followup_questions" :key="qIdx">
+                                <div @click="topic = qText; triggerResearch();" class="p-3 bg-slate-900/60 border border-white/5 hover:border-white/20 hover:bg-slate-900 rounded-xl cursor-pointer transition-all flex items-center justify-between text-xs sm:text-sm text-slate-300">
+                                    <span x-text="qText"></span>
+                                    <span class="text-xs font-bold" :class="themeClasses.accentTextAlt">Explore &rarr;</span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="!loadingResearch && !researchResult" class="glass-panel p-12 rounded-2xl text-center space-y-4 border-dashed border-white/5">
+                    <div class="text-5xl text-slate-700">🔬</div>
+                    <h3 class="text-xl font-bold text-slate-400">Research Brief Not Compiled</h3>
+                    <p class="text-sm text-slate-500 max-w-md mx-auto">Input a subject inside the concept matrix field above to compile a comprehensive executive research brief complete with peer-reviewed literature citations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showAuthModal" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+         style="display: none;">
+        
+        <div @click.away="showAuthModal = false" class="glass-panel bg-slate-900/95 border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative space-y-6">
+            <button @click="showAuthModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <div>
+                <h3 class="text-xl font-extrabold text-white flex items-center gap-2">
+                    <span>🔐</span> EduMorph Authentication
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">Sign in with Google OAuth or create an account with Email & Password.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-white/10 text-xs font-bold">
+                <button @click="authTab = 'login'; authError = ''; authSuccess = '';" :class="authTab === 'login' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'" class="py-2 rounded-lg transition-all">Sign In</button>
+                <button @click="authTab = 'signup'; authError = ''; authSuccess = '';" :class="authTab === 'signup' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'" class="py-2 rounded-lg transition-all">Create Account</button>
+            </div>
+
+            <div>
+                <button @click="signInWithGoogle()" :disabled="authLoading" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl font-semibold text-xs text-slate-100 flex items-center justify-center gap-3 transition-all shadow-md">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span x-text="authTab === 'login' ? 'Sign in with Google' : 'Sign up with Google'"></span>
+                </button>
+                <span class="block text-[10px] text-slate-500 text-center mt-1">Configured via Google Cloud Console & Supabase Provider</span>
+            </div>
+
+            <div class="flex items-center gap-3 my-2">
+                <hr class="flex-1 border-white/10" />
+                <span class="text-[10px] uppercase font-bold text-slate-500">OR WITH EMAIL</span>
+                <hr class="flex-1 border-white/10" />
+            </div>
+
+            <form @submit.prevent="handleEmailAuth()" class="space-y-4">
+                <template x-if="authTab === 'signup'">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
+                        <input type="text" x-model="authName" placeholder="John Doe" class="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500" />
+                    </div>
+                </template>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+                    <input type="email" x-model="authEmail" required placeholder="name@example.com" class="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+                    <input type="password" x-model="authPassword" required placeholder="••••••••" class="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500" />
+                </div>
+
+                <button type="submit" :disabled="authLoading" class="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold text-xs text-white shadow-lg transition-all flex items-center justify-center gap-2">
+                    <span x-show="!authLoading" x-text="authTab === 'login' ? 'Sign In' : 'Create Account'"></span>
+                    <span x-show="authLoading" class="flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Authenticating...
+                    </span>
+                </button>
+            </form>
+
+            <div x-show="authError" class="p-3 rounded-xl bg-rose-950/60 border border-rose-800/50 text-rose-300 text-xs leading-relaxed" x-text="authError"></div>
+            <div x-show="authSuccess" class="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800/50 text-emerald-300 text-xs leading-relaxed" x-text="authSuccess"></div>
+
+            <div class="pt-2 border-t border-white/10">
+                <button @click="showSupabaseConfig = !showSupabaseConfig" class="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1 font-semibold">
+                    <span>⚙️ Config Supabase Project Settings</span>
+                    <span x-text="showSupabaseConfig ? '▲' : '▼'"></span>
+                </button>
+                <div x-show="showSupabaseConfig" class="mt-3 space-y-3 bg-slate-950/80 p-3 rounded-xl border border-white/5 text-xs">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">SUPABASE_URL</label>
+                        <input type="text" x-model="supabaseUrlInput" placeholder="https://xyz.supabase.co" class="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">SUPABASE_ANON_KEY</label>
+                        <input type="password" x-model="supabaseAnonKeyInput" placeholder="eyJhbGciOiJIUzI1Ni..." class="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none" />
+                    </div>
+                    <button @click="saveSupabaseConfig()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs transition-colors">
+                        Save Local Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
