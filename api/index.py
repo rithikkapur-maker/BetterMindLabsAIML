@@ -1,6 +1,8 @@
 import os
 import json
 import re
+import smtplib
+from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from groq import Groq
@@ -16,6 +18,16 @@ app.json.ensure_ascii = False
 # Initialize high-speed Groq Inference Engine client using the flagship open model
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+
+# Feedback mailer configuration: sends user feedback submissions via SMTP.
+# SMTP_EMAIL_USER / SMTP_EMAIL_APP_PASSWORD are the sending mailbox's credentials
+# (e.g. a Gmail address + App Password: https://myaccount.google.com/apppasswords).
+# FEEDBACK_RECIPIENT_EMAIL is where feedback gets delivered; defaults to Rithik's inbox.
+SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_EMAIL_USER = os.environ.get("SMTP_EMAIL_USER")
+SMTP_EMAIL_APP_PASSWORD = os.environ.get("SMTP_EMAIL_APP_PASSWORD")
+FEEDBACK_RECIPIENT_EMAIL = os.environ.get("FEEDBACK_RECIPIENT_EMAIL", "rithik.kapur@gmail.com")
 
 
 def _to_float(value, fallback):
@@ -302,6 +314,50 @@ def generate_research():
         return jsonify(response_data)
     except Exception as e:
         return jsonify({"error": f"Research synthesis error: {str(e)}"}), 500
+
+
+@app.route('/api/send-feedback', methods=['POST'])
+def send_feedback():
+    if not SMTP_EMAIL_USER or not SMTP_EMAIL_APP_PASSWORD:
+        return jsonify({"error": "Feedback mailer is not configured. Set SMTP_EMAIL_USER and SMTP_EMAIL_APP_PASSWORD environment variables."}), 500
+
+    data = request.json or {}
+    message = (data.get("message") or "").strip()
+    sender_name = (data.get("name") or "Anonymous").strip() or "Anonymous"
+    sender_email = (data.get("email") or "").strip()
+    category = (data.get("category") or "General").strip() or "General"
+
+    if not message:
+        return jsonify({"error": "Feedback message cannot be empty."}), 400
+    if len(message) > 5000:
+        return jsonify({"error": "Feedback message is too long (5000 character limit)."}), 400
+
+    body_lines = [
+        f"New EduMorph AI feedback submission",
+        f"Category: {category}",
+        f"From: {sender_name}" + (f" <{sender_email}>" if sender_email else " (no email provided)"),
+        "",
+        "Message:",
+        message,
+    ]
+    email_body = "\n".join(body_lines)
+
+    try:
+        msg = MIMEText(email_body, _charset="utf-8")
+        msg["Subject"] = f"EduMorph AI Feedback — {category}"
+        msg["From"] = SMTP_EMAIL_USER
+        msg["To"] = FEEDBACK_RECIPIENT_EMAIL
+        if sender_email:
+            msg["Reply-To"] = sender_email
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_EMAIL_USER, SMTP_EMAIL_APP_PASSWORD)
+            server.sendmail(SMTP_EMAIL_USER, [FEEDBACK_RECIPIENT_EMAIL], msg.as_string())
+
+        return jsonify({"success": True, "message": "Feedback sent successfully."})
+    except Exception as e:
+        return jsonify({"error": f"Failed to send feedback email: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
