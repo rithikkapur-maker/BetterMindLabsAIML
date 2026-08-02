@@ -1,85 +1,70 @@
-<!--
-    ============================================================
-    GRAPHING LAB (Mode 4)
-    ============================================================
-    This partial is pulled into templates/index.html via a Jinja
-    include tag. It exists as its own file so the graph library can
-    keep growing (Math / Chemistry / Physics / Biology) without
-    index.html itself getting any bigger.
-
-    It relies on Alpine state/methods already defined on the root
-    x-data object in index.html:
-      - activeMode, themeClasses
-      - graphSubjects, selectedGraphSubject, selectedGraphObj
-      - selectGraph(graph), graphSliders, graphBounds, zoom()
-      - dynamicPathD, dynamicYLabels, dynamicXLabels, originX, originY
-    and reads its graph definitions from window.GRAPH_LIBRARY,
-    which is declared in the <script> block at the bottom of this file.
--->
 <div x-show="activeMode === 'graphing'" class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            <span>📊 Graphing Lab</span>
+            <span>📊 Graphing Lab & Comprehensive Equation Matrix (80 Core Equations)</span>
         </h2>
         <template x-if="selectedGraphObj">
-            <button @click="selectedGraphObj = null" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 border border-white/15 hover:bg-slate-800 transition-all self-start sm:self-auto">
+            <button @click="selectedGraphObj = null" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 border border-white/15 hover:bg-slate-800 hover:text-white transition-all self-start sm:self-auto shadow-lg">
                 ← Back to Graph Library
             </button>
         </template>
     </div>
 
-    <!-- Subject Tabs: Math / Chemistry / Physics / Biology -->
-    <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-white/10 overflow-x-auto">
+    <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-white/10 overflow-x-auto shadow-inner">
         <template x-for="subj in graphSubjects" :key="subj.key">
             <button @click="selectedGraphSubject = subj.key; selectedGraphObj = null;"
                     :class="selectedGraphSubject === subj.key ? themeClasses.activeButton : 'text-slate-400 hover:text-white hover:bg-white/5'"
-                    class="flex-1 min-w-[110px] py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap">
-                <span x-text="subj.icon"></span>
+                    class="flex-1 min-w-[120px] py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                <span x-text="subj.icon" class="text-base"></span>
                 <span x-text="subj.label"></span>
             </button>
         </template>
     </div>
 
-    <!-- Graph Library Grid: pick a graph within the active subject -->
     <template x-if="!selectedGraphObj">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
             <template x-for="g in (window.GRAPH_LIBRARY[selectedGraphSubject] || [])" :key="g.id">
-                <button @click="selectGraph(g)" class="glass-panel glass-panel-hover text-left p-5 rounded-2xl border border-white/10 shadow-xl transition-all">
-                    <div class="text-2xl mb-2" x-text="g.icon || '📈'"></div>
-                    <div class="text-sm font-bold text-white mb-1" x-text="g.title"></div>
-                    <div class="text-xs text-slate-400 leading-relaxed" x-text="g.description"></div>
+                <button @click="selectGraph(g)" class="glass-panel glass-panel-hover text-left p-6 rounded-3xl border border-white/10 shadow-xl transition-all flex flex-col h-full">
+                    <div class="flex items-center justify-between mb-3 w-full">
+                        <span class="text-3xl drop-shadow-md" x-text="g.icon || '📈'"></span>
+                        <span class="text-[10px] font-mono px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-slate-400 shadow-inner" x-text="'#' + g.num"></span>
+                    </div>
+                    <div class="text-base font-extrabold text-white mb-1.5" x-text="g.title"></div>
+                    <div class="text-xs font-mono text-cyan-400 mb-3 truncate tracking-wide bg-cyan-950/30 px-2 py-1 rounded-md inline-block w-fit border border-cyan-500/20" x-html="g.equation" x-show="g.equation"></div>
+                    <div class="text-xs text-slate-400 leading-relaxed mt-auto" x-text="g.description"></div>
                 </button>
             </template>
             <template x-if="!(window.GRAPH_LIBRARY[selectedGraphSubject] || []).length">
-                <div class="col-span-full text-center py-16 text-slate-500 text-xs">
-                    No graphs have been added to <span class="font-bold text-slate-400" x-text="selectedGraphSubject"></span> yet.
+                <div class="col-span-full text-center py-16 text-slate-500 text-sm font-medium bg-slate-900/50 rounded-3xl border border-white/5">
+                    No equations found for <span class="font-bold text-slate-400" x-text="selectedGraphSubject"></span>.
                 </div>
             </template>
         </div>
     </template>
 
-    <!-- Graph Viewer: same interactive plot engine used by Concept Alchemist -->
     <template x-if="selectedGraphObj">
         <div class="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-                <div>
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400 block" x-text="selectedGraphSubject"></span>
-                    <h4 class="text-lg font-bold text-white" x-text="selectedGraphObj.title"></h4>
-                    <p class="text-xs text-slate-400 mt-1" x-text="selectedGraphObj.description"></p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button @click="zoom(0.8)" class="px-3 py-1.5 bg-slate-900 border border-white/15 rounded-xl text-xs hover:bg-slate-800 text-slate-200 font-semibold transition-all">🔍 Zoom In</button>
-                    <button @click="zoom(1.25)" class="px-3 py-1.5 bg-slate-900 border border-white/15 rounded-xl text-xs hover:bg-slate-800 text-slate-200 font-semibold transition-all">🔎 Zoom Out</button>
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-6 border-b border-white/10 pb-6">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-400" x-text="selectedGraphSubject"></span>
+                        <span class="text-[10px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/10" x-text="'Equation #' + selectedGraphObj.num"></span>
+                    </div>
+                    <h4 class="text-2xl font-extrabold text-white mb-4" x-text="selectedGraphObj.title"></h4>
+                    
+                    <div class="inline-block bg-slate-950/80 px-6 py-4 rounded-2xl border border-cyan-500/30 shadow-[0_0_20px_rgba(34,211,238,0.1)] font-mono text-cyan-300 text-xl sm:text-2xl tracking-wider mb-4" x-show="selectedGraphObj.equation" x-html="selectedGraphObj.equation"></div>
+                    
+                    <p class="text-sm text-slate-400 leading-relaxed max-w-2xl" x-text="selectedGraphObj.description"></p>
                 </div>
             </div>
 
             <template x-if="selectedGraphObj.sliders && selectedGraphObj.sliders.length">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/80 p-5 rounded-2xl border border-white/10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/60 p-6 rounded-2xl border border-white/5 shadow-inner">
                     <template x-for="slider in selectedGraphObj.sliders" :key="slider.variable">
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span class="text-slate-300" x-text="slider.label"></span>
-                                <span class="text-purple-400 font-mono" x-text="graphSliders[slider.variable]"></span>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <span class="text-slate-300 uppercase tracking-wider text-[10px]" x-text="slider.label"></span>
+                                <span class="text-cyan-400 font-mono bg-cyan-950/40 px-2 py-1 rounded border border-cyan-800/50 shadow-sm" x-text="graphSliders[slider.variable].toFixed(2)"></span>
                             </div>
                             <input type="range"
                                    :min="slider.min"
@@ -87,49 +72,98 @@
                                    :step="slider.step"
                                    x-model.number="graphSliders[slider.variable]"
                                    :class="themeClasses.sliderAccent"
-                                   class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                                   class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer focus:outline-none transition-all">
                         </div>
                     </template>
                 </div>
             </template>
 
-            <div class="bg-slate-950/90 rounded-2xl border border-white/10 p-4 flex justify-center items-center overflow-x-auto shadow-inner">
-                <svg width="480" height="280" viewBox="0 0 480 280" class="overflow-visible">
+            <div class="bg-slate-950 rounded-2xl border border-white/10 flex justify-center items-center overflow-hidden shadow-2xl w-full relative group">
+                
+                <div class="absolute right-4 top-4 flex flex-col z-10 shadow-xl rounded-xl overflow-hidden border border-white/20 opacity-70 hover:opacity-100 transition-opacity backdrop-blur-md">
+                    <button @click="zoom(0.8)" class="w-10 h-10 bg-slate-900/80 hover:bg-slate-800 hover:text-cyan-400 text-white font-light text-2xl flex items-center justify-center transition-colors pb-1" title="Zoom In">+</button>
+                    <div class="h-px w-full bg-white/20"></div>
+                    <button @click="zoom(1.25)" class="w-10 h-10 bg-slate-900/80 hover:bg-slate-800 hover:text-cyan-400 text-white font-light text-3xl flex items-center justify-center transition-colors pb-1.5" title="Zoom Out">−</button>
+                </div>
+
+                <svg viewBox="60 40 380 200" 
+                     class="w-full h-auto max-h-[550px] block cursor-crosshair" 
+                     preserveAspectRatio="xMidYMid meet"
+                     @wheel.prevent="zoom($event.deltaY > 0 ? 1.15 : 0.85)">
                     <defs>
-                        <pattern id="gridPatternGraphingLab" width="20" height="20" patternUnits="userSpaceOnUse">
-                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1"/>
+                        <pattern id="minorGridLab" x="0" y="0" width="19" height="19" patternUnits="userSpaceOnUse">
+                            <path d="M 19 0 L 0 0 0 19" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="0.5"/>
                         </pattern>
+                        <pattern id="majorGridLab" x="0" y="0" width="76" height="76" patternUnits="userSpaceOnUse">
+                            <rect width="76" height="76" fill="url(#minorGridLab)"/>
+                            <path d="M 76 0 L 0 0 0 76" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1"/>
+                        </pattern>
+                        <filter id="neonGlowLab" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="3.5" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
                     </defs>
-                    <rect width="480" height="280" fill="url(#gridPatternGraphingLab)" rx="8"/>
 
-                    <line x1="60" y1="240" x2="440" y2="240" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-                    <line x1="60" y1="40" x2="60" y2="240" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-
-                    <template x-if="originX !== null">
-                        <line :x1="originX" y1="40" :x2="originX" y2="240" stroke="rgba(255,255,255,0.15)" stroke-dasharray="4,4" stroke-width="1.5"/>
-                    </template>
-                    <template x-if="originY !== null">
-                        <line x1="60" :y1="originY" x2="440" :y2="originY" stroke="rgba(255,255,255,0.15)" stroke-dasharray="4,4" stroke-width="1.5"/>
-                    </template>
-
-                    <path :d="dynamicPathD" fill="none" :stroke="themeClasses.chartLine" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="60" y="40" width="380" height="200" fill="url(#majorGridLab)"/>
 
                     <template x-for="lbl in dynamicYLabels" :key="lbl.value">
-                        <g>
-                            <line x1="55" :y1="lbl.y" x2="60" :y2="lbl.y" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-                            <text x="50" :y="lbl.y + 4" fill="rgba(255,255,255,0.6)" font-size="9" text-anchor="end" font-family="monospace" x-text="lbl.value"></text>
-                        </g>
+                        <line x1="60" :y1="lbl.y" x2="440" :y2="lbl.y" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
                     </template>
-
                     <template x-for="lbl in dynamicXLabels" :key="lbl.value">
-                        <g>
-                            <line :x1="lbl.x" y1="240" :x2="lbl.x" y2="245" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-                            <text :x="lbl.x" y="258" fill="rgba(255,255,255,0.6)" font-size="9" text-anchor="middle" font-family="monospace" x-text="lbl.value"></text>
-                        </g>
+                        <line :x1="lbl.x" y1="40" :x2="lbl.x" y2="240" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
                     </template>
 
-                    <text x="250" y="275" fill="#22d3ee" font-size="10" font-weight="bold" text-anchor="middle" x-text="selectedGraphObj.xAxis?.label || 'x'"></text>
-                    <text x="20" y="140" fill="#22d3ee" font-size="10" font-weight="bold" text-anchor="middle" transform="rotate(-90 20 140)" x-text="selectedGraphObj.yAxis?.label || 'y'"></text>
+                    <template x-if="originX !== null">
+                        <line :x1="originX" y1="40" :x2="originX" y2="240" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                    </template>
+                    <template x-if="originY !== null">
+                        <line x1="60" :y1="originY" x2="440" :y2="originY" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                    </template>
+
+                    <path :d="dynamicPathD" fill="none" stroke="#000000" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path :d="dynamicPathD" fill="none" stroke="rgba(34, 211, 238, 0.4)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlowLab)"/>
+                    <path :d="dynamicPathD" fill="none" :stroke="themeClasses.chartLine" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+                    <template x-for="lbl in dynamicYLabels" :key="lbl.value">
+                        <text x="64"
+                              :y="lbl.y === 240 ? 236 : (lbl.y === 40 ? 48 : lbl.y + 3)"
+                              fill="rgba(255,255,255,0.75)"
+                              font-size="9"
+                              text-anchor="start"
+                              font-family="monospace"
+                              font-weight="600"
+                              x-show="parseFloat(lbl.value) !== 0"
+                              x-text="lbl.value"></text>
+                    </template>
+                    
+                    <template x-for="lbl in dynamicXLabels" :key="lbl.value">
+                        <text :x="lbl.x === 60 ? 64 : (lbl.x === 440 ? 436 : lbl.x)"
+                              y="236"
+                              fill="rgba(255,255,255,0.75)"
+                              font-size="9"
+                              :text-anchor="lbl.x === 60 ? 'start' : (lbl.x === 440 ? 'end' : 'middle')"
+                              font-family="monospace"
+                              font-weight="600"
+                              x-show="parseFloat(lbl.value) !== 0"
+                              x-text="lbl.value"></text>
+                    </template>
+
+                    <template x-if="originX !== null && originY !== null">
+                        <text :x="Math.max(64, originX - 6)"
+                              :y="Math.min(236, originY + 12)"
+                              fill="rgba(255,255,255,0.85)"
+                              font-size="9"
+                              text-anchor="end"
+                              font-family="monospace"
+                              font-weight="700">0</text>
+                    </template>
+
+                    <text x="436" :y="originY !== null ? Math.max(50, Math.min(232, originY - 6)) : 232" fill="#38bdf8" font-size="10" font-style="italic" font-weight="bold" text-anchor="end" x-text="selectedGraphObj.xAxis?.label || 'x'"></text>
+                    <text :x="originX !== null ? Math.max(66, Math.min(430, originX + 6)) : 66" y="50" fill="#38bdf8" font-size="10" font-style="italic" font-weight="bold" text-anchor="start" x-text="selectedGraphObj.yAxis?.label || 'y'"></text>
                 </svg>
             </div>
         </div>
@@ -138,194 +172,96 @@
 
 <script>
     // ============================================================
-    // GRAPH LIBRARY DATA
+    // COMPLETE 80-EQUATION GRAPH LIBRARY DATA MATRIX
     // ============================================================
-    // Add new graphs here under the relevant subject array. This is the
-    // ONLY place you need to touch to grow the Graphing Lab — nothing in
-    // index.html needs to change.
-    //
-    // Schema for each graph object:
-    // {
-    //   id:          unique string
-    //   icon:        emoji shown on the card (optional, defaults to 📈)
-    //   title:       card + viewer heading
-    //   description: one-line summary shown on the card and in the viewer
-    //   expression:  JS math expression string, MUST reference "x"
-    //                (Math.*, sin/cos/tan/pow/sqrt/abs/exp/log/pi/e are
-    //                available unprefixed, same as the AI-generated graphs)
-    //   xAxis:       { label, min, max }
-    //   yAxis:       { label, min, max }
-    //   sliders:     [ { variable, label, min, max, value, step } ]
-    //                (omit or use [] for a graph with no adjustable
-    //                parameters; every slider "variable" must appear in
-    //                the expression)
-    // }
     window.GRAPH_LIBRARY = {
         Math: [
-            {
-                id: 'quadratic-function',
-                icon: '📐',
-                title: 'Quadratic Function',
-                description: 'See how a, b, and c reshape a parabola: y = ax² + bx + c.',
-                expression: 'a * x * x + b * x + c',
-                xAxis: { label: 'x', min: -10, max: 10 },
-                yAxis: { label: 'y', min: -10, max: 10 },
-                sliders: [
-                    { variable: 'a', label: 'a (curvature)', min: -3, max: 3, value: 1, step: 0.1 },
-                    { variable: 'b', label: 'b (tilt)', min: -5, max: 5, value: 0, step: 0.1 },
-                    { variable: 'c', label: 'c (vertical shift)', min: -5, max: 5, value: 0, step: 0.5 }
-                ]
-            },
-            {
-                id: 'sine-wave',
-                icon: '🌊',
-                title: 'Sine Wave',
-                description: 'Amplitude, frequency, and phase shift of y = A·sin(Bx + C).',
-                expression: 'A * Math.sin(B * x + C)',
-                xAxis: { label: 'x (radians)', min: -10, max: 10 },
-                yAxis: { label: 'y', min: -6, max: 6 },
-                sliders: [
-                    { variable: 'A', label: 'Amplitude A', min: 0.5, max: 5, value: 2, step: 0.1 },
-                    { variable: 'B', label: 'Frequency B', min: 0.2, max: 4, value: 1, step: 0.1 },
-                    { variable: 'C', label: 'Phase Shift C', min: -3.14, max: 3.14, value: 0, step: 0.1 }
-                ]
-            },
-            {
-                id: 'exponential-growth',
-                icon: '📈',
-                title: 'Exponential Function',
-                description: 'y = a·bˣ — the building block for growth and decay curves.',
-                expression: 'a * Math.pow(b, x)',
-                xAxis: { label: 'x', min: -5, max: 5 },
-                yAxis: { label: 'y', min: -2, max: 20 },
-                sliders: [
-                    { variable: 'a', label: 'Initial value a', min: 0.1, max: 5, value: 1, step: 0.1 },
-                    { variable: 'b', label: 'Base b', min: 0.2, max: 3, value: 1.5, step: 0.05 }
-                ]
-            }
-        ],
-        Chemistry: [
-            {
-                id: 'radioactive-decay',
-                icon: '☢️',
-                title: 'Radioactive Decay',
-                description: 'N(t) = N₀·e^(−λt), remaining quantity of an isotope over time.',
-                expression: 'N0 * Math.exp(-lambda * x)',
-                xAxis: { label: 'time (t)', min: 0, max: 20 },
-                yAxis: { label: 'N(t)', min: 0, max: 100 },
-                sliders: [
-                    { variable: 'N0', label: 'Initial Amount N₀', min: 10, max: 100, value: 100, step: 5 },
-                    { variable: 'lambda', label: 'Decay Constant λ', min: 0.05, max: 1, value: 0.2, step: 0.01 }
-                ]
-            },
-            {
-                id: 'arrhenius-equation',
-                icon: '🔥',
-                title: 'Arrhenius Equation',
-                description: 'How rate constant k grows with temperature: k = A·e^(−Ea / x).',
-                expression: 'A * Math.exp(-Ea / x)',
-                xAxis: { label: 'Temperature (K)', min: 100, max: 1000 },
-                yAxis: { label: 'Rate Constant k', min: 0, max: 10 },
-                sliders: [
-                    { variable: 'A', label: 'Pre-exponential Factor A', min: 1, max: 10, value: 8, step: 0.5 },
-                    { variable: 'Ea', label: 'Activation Energy Ea', min: 100, max: 2000, value: 500, step: 50 }
-                ]
-            },
-            {
-                id: 'ideal-gas-law',
-                icon: '🧪',
-                title: 'Ideal Gas Law (P vs V)',
-                description: 'Pressure vs. volume at fixed temperature: P = nRT / V.',
-                expression: 'n * R * T / x',
-                xAxis: { label: 'Volume (L)', min: 1, max: 20 },
-                yAxis: { label: 'Pressure (atm)', min: 0, max: 50 },
-                sliders: [
-                    { variable: 'n', label: 'Moles n', min: 0.5, max: 5, value: 1, step: 0.1 },
-                    { variable: 'T', label: 'Temperature T (K)', min: 100, max: 500, value: 298, step: 10 }
-                ]
-            }
+            { num: 1, id: 'linear-function', icon: '📐', title: 'Linear Function', equation: 'y = mx + b', description: 'Straight line relationship governed by constant slope m and y-intercept b.', expression: 'm * x + b', xAxis: { label: 'x', min: -10, max: 10 }, yAxis: { label: 'y', min: -10, max: 10 }, sliders: [{ variable: 'm', label: 'Slope (m)', min: -5, max: 5, value: 1, step: 0.5 }, { variable: 'b', label: 'Intercept (b)', min: -5, max: 5, value: 0, step: 0.5 }] },
+            { num: 2, id: 'quadratic-function', icon: '📉', title: 'Quadratic Parabola', equation: 'y = ax<sup>2</sup> + bx + c', description: 'Parabolic curve representing second-degree polynomial relationships.', expression: 'a * Math.pow(x, 2) + b * x + c', xAxis: { label: 'x', min: -10, max: 10 }, yAxis: { label: 'y', min: -10, max: 20 }, sliders: [{ variable: 'a', label: 'Curvature (a)', min: -3, max: 3, value: 1, step: 0.2 }, { variable: 'b', label: 'Linear Slope (b)', min: -5, max: 5, value: 0, step: 0.5 }, { variable: 'c', label: 'Vertical Shift (c)', min: -5, max: 5, value: 0, step: 0.5 }] },
+            { num: 3, id: 'cubic-function', icon: '〰️', title: 'Cubic Polynomial', equation: 'y = ax<sup>3</sup> + bx', description: 'Third-degree polynomial showcasing inflection points and dual extrema.', expression: 'a * Math.pow(x, 3) + b * x', xAxis: { label: 'x', min: -5, max: 5 }, yAxis: { label: 'y', min: -20, max: 20 }, sliders: [{ variable: 'a', label: 'Scale Factor (a)', min: -2, max: 2, value: 0.5, step: 0.1 }, { variable: 'b', label: 'Linear Term (b)', min: -5, max: 5, value: -2, step: 0.5 }] },
+            { num: 4, id: 'exponential-growth', icon: '🚀', title: 'Exponential Growth', equation: 'y = a &middot; e<sup>kx</sup>', description: 'Rapid unbounded growth proportional to current value.', expression: 'a * Math.exp(k * x)', xAxis: { label: 'x', min: -2, max: 5 }, yAxis: { label: 'y', min: 0, max: 50 }, sliders: [{ variable: 'a', label: 'Initial Value (a)', min: 0.5, max: 5, value: 1, step: 0.5 }, { variable: 'k', label: 'Growth Rate (k)', min: 0.1, max: 1.5, value: 0.8, step: 0.1 }] },
+            { num: 5, id: 'exponential-decay', icon: '📉', title: 'Exponential Decay', equation: 'y = a &middot; e<sup>&minus;kx</sup>', description: 'Asymptotic decay tapering toward zero over x.', expression: 'a * Math.exp(-k * x)', xAxis: { label: 'x', min: 0, max: 10 }, yAxis: { label: 'y', min: 0, max: 20 }, sliders: [{ variable: 'a', label: 'Initial Amount (a)', min: 1, max: 20, value: 10, step: 1 }, { variable: 'k', label: 'Decay Rate (k)', min: 0.1, max: 1, value: 0.4, step: 0.05 }] },
+            { num: 6, id: 'logarithmic-function', icon: '🪵', title: 'Logarithmic Curve', equation: 'y = a &middot; ln(x + c)', description: 'Inverse of exponential function; rapid early growth tapering out.', expression: 'a * Math.log(x + c)', xAxis: { label: 'x', min: 0.1, max: 20 }, yAxis: { label: 'y', min: -5, max: 15 }, sliders: [{ variable: 'a', label: 'Amplitude (a)', min: 0.5, max: 5, value: 2, step: 0.5 }, { variable: 'c', label: 'Shift Constant (c)', min: 0.1, max: 3, value: 1, step: 0.1 }] },
+            { num: 7, id: 'sine-wave', icon: '🌊', title: 'Sine Wave', equation: 'y = A sin(&omega;x + &phi;)', description: 'Fundamental harmonic oscillation pattern.', expression: 'A * Math.sin(w * x + phi)', xAxis: { label: 'x (rad)', min: -10, max: 10 }, yAxis: { label: 'y', min: -5, max: 5 }, sliders: [{ variable: 'A', label: 'Amplitude (A)', min: 0.5, max: 4, value: 2, step: 0.5 }, { variable: 'w', label: 'Frequency (ω)', min: 0.2, max: 3, value: 1, step: 0.2 }, { variable: 'phi', label: 'Phase Shift (φ)', min: 0, max: 3.14, value: 0, step: 0.314 }] },
+            { num: 8, id: 'cosine-wave', icon: '🌊', title: 'Cosine Wave', equation: 'y = A cos(&omega;x + &phi;)', description: 'Harmonic oscillator orthogonal in phase to the sine wave.', expression: 'A * Math.cos(w * x + phi)', xAxis: { label: 'x (rad)', min: -10, max: 10 }, yAxis: { label: 'y', min: -5, max: 5 }, sliders: [{ variable: 'A', label: 'Amplitude (A)', min: 0.5, max: 4, value: 2, step: 0.5 }, { variable: 'w', label: 'Frequency (ω)', min: 0.2, max: 3, value: 1, step: 0.2 }, { variable: 'phi', label: 'Phase Shift (φ)', min: 0, max: 3.14, value: 0, step: 0.314 }] },
+            { num: 9, id: 'tangent-function', icon: '📐', title: 'Tangent Curve', equation: 'y = A tan(kx)', description: 'Trigonometric ratio of sine to cosine exhibiting vertical asymptotes.', expression: 'A * Math.tan(k * x)', xAxis: { label: 'x', min: -3, max: 3 }, yAxis: { label: 'y', min: -10, max: 10 }, sliders: [{ variable: 'A', label: 'Scale Factor (A)', min: 0.2, max: 2, value: 1, step: 0.2 }, { variable: 'k', label: 'Frequency (k)', min: 0.5, max: 2, value: 1, step: 0.1 }] },
+            { num: 10, id: 'absolute-value', icon: '∨', title: 'Absolute Value', equation: 'y = a|x &minus; h| + k', description: 'V-shaped continuous curve with a sharp vertex at (h, k).', expression: 'a * Math.abs(x - h) + k', xAxis: { label: 'x', min: -10, max: 10 }, yAxis: { label: 'y', min: -5, max: 15 }, sliders: [{ variable: 'a', label: 'Steepness (a)', min: -3, max: 3, value: 1, step: 0.5 }, { variable: 'h', label: 'Horizontal Shift (h)', min: -5, max: 5, value: 0, step: 1 }, { variable: 'k', label: 'Vertical Shift (k)', min: -5, max: 5, value: 0, step: 1 }] },
+            { num: 11, id: 'inverse-square-math', icon: '⚡', title: 'Inverse Square Law', equation: 'y = k / x<sup>2</sup>', description: 'Steep drop-off where y diminishes with the square of x.', expression: 'k / (Math.pow(x, 2) + 0.1)', xAxis: { label: 'x', min: 0.1, max: 10 }, yAxis: { label: 'y', min: 0, max: 20 }, sliders: [{ variable: 'k', label: 'Constant (k)', min: 1, max: 50, value: 10, step: 2 }] },
+            { num: 12, id: 'rational-hyperbola', icon: '🔀', title: 'Rectangular Hyperbola', equation: 'y = a / (x &minus; h) + k', description: 'Classic inverse rational function featuring horizontal and vertical asymptotes.', expression: 'a / (x - h + 0.01) + k', xAxis: { label: 'x', min: -10, max: 10 }, yAxis: { label: 'y', min: -10, max: 10 }, sliders: [{ variable: 'a', label: 'Scale Constant (a)', min: 1, max: 10, value: 4, step: 1 }, { variable: 'h', label: 'Asymptote X (h)', min: -4, max: 4, value: 0, step: 0.5 }, { variable: 'k', label: 'Asymptote Y (k)', min: -4, max: 4, value: 0, step: 0.5 }] },
+            { num: 13, id: 'gaussian-distribution', icon: '🔔', title: 'Gaussian Bell Curve', equation: 'y = a &middot; e<sup>&minus;(x&minus;&mu;)<sup>2</sup>/(2&sigma;<sup>2</sup>)</sup>', description: 'Standard normal probability density distribution curve.', expression: 'a * Math.exp(-Math.pow(x - mu, 2) / (2 * Math.pow(sigma, 2)))', xAxis: { label: 'x', min: -10, max: 10 }, yAxis: { label: 'y Density', min: 0, max: 5 }, sliders: [{ variable: 'a', label: 'Peak Height (a)', min: 1, max: 5, value: 3, step: 0.5 }, { variable: 'mu', label: 'Mean (μ)', min: -5, max: 5, value: 0, step: 0.5 }, { variable: 'sigma', label: 'Std Dev (σ)', min: 0.5, max: 3, value: 1.5, step: 0.25 }] },
+            { num: 14, id: 'logistic-sigmoid', icon: '📈', title: 'Logistic Sigmoid', equation: 'y = L / (1 + e<sup>&minus;k(x&minus;x<sub>0</sub>)</sup>)', description: 'S-shaped growth curve featuring smooth carrying-capacity saturation.', expression: 'L / (1 + Math.exp(-k * (x - x0)))', xAxis: { label: 'x', min: -10, max: 10 }, yAxis: { label: 'y', min: 0, max: 15 }, sliders: [{ variable: 'L', label: 'Capacity (L)', min: 2, max: 15, value: 10, step: 1 }, { variable: 'k', label: 'Steepness (k)', min: 0.2, max: 2, value: 0.8, step: 0.1 }, { variable: 'x0', label: 'Midpoint (x₀)', min: -5, max: 5, value: 0, step: 0.5 }] },
+            { num: 15, id: 'power-law', icon: '⚡', title: 'Power Law Distribution', equation: 'y = a &middot; x<sup>p</sup>', description: 'Polynomial scaling relationship common in fractal geometry and heavy tails.', expression: 'a * Math.pow(Math.abs(x), p)', xAxis: { label: 'x', min: 0, max: 10 }, yAxis: { label: 'y', min: 0, max: 30 }, sliders: [{ variable: 'a', label: 'Scale Factor (a)', min: 0.5, max: 5, value: 1, step: 0.5 }, { variable: 'p', label: 'Power Exponent (p)', min: 0.2, max: 3, value: 1.5, step: 0.1 }] },
+            { num: 16, id: 'square-root-func', icon: '√', title: 'Square Root Curve', equation: 'y = a &radic;(x &minus; h) + k', description: 'Radical curve defined for values greater than or equal to domain origin h.', expression: 'a * Math.sqrt(Math.max(0, x - h)) + k', xAxis: { label: 'x', min: 0, max: 20 }, yAxis: { label: 'y', min: 0, max: 15 }, sliders: [{ variable: 'a', label: 'Multiplier (a)', min: 0.5, max: 4, value: 2, step: 0.5 }, { variable: 'h', label: 'Domain Shift (h)', min: 0, max: 5, value: 0, step: 1 }, { variable: 'k', label: 'Vertical Shift (k)', min: 0, max: 5, value: 0, step: 1 }] },
+            { num: 17, id: 'damped-sine-wave', icon: '〰️', title: 'Damped Sine Wave', equation: 'y = A e<sup>&minus;&gamma;x</sup> sin(&omega;x)', description: 'Harmonic wave with exponential envelope attenuation.', expression: 'A * Math.exp(-gamma * x) * Math.sin(w * x)', xAxis: { label: 'Time x', min: 0, max: 15 }, yAxis: { label: 'Amplitude y', min: -5, max: 5 }, sliders: [{ variable: 'A', label: 'Initial Amp (A)', min: 1, max: 5, value: 4, step: 0.5 }, { variable: 'gamma', label: 'Damping Rate (γ)', min: 0.05, max: 0.5, value: 0.2, step: 0.05 }, { variable: 'w', label: 'Frequency (ω)', min: 0.5, max: 4, value: 2, step: 0.5 }] },
+            { num: 18, id: 'semicircle-curve', icon: '🌗', title: 'Upper Semicircle', equation: 'y = &radic;(R<sup>2</sup> &minus; x<sup>2</sup>)', description: 'Upper locus of points equidistant from the coordinate origin.', expression: 'Math.sqrt(Math.max(0, Math.pow(R, 2) - Math.pow(x, 2)))', xAxis: { label: 'x', min: -10, max: 10 }, yAxis: { label: 'y', min: 0, max: 10 }, sliders: [{ variable: 'R', label: 'Radius (R)', min: 2, max: 9, value: 6, step: 1 }] },
+            { num: 19, id: 'quartic-double-well', icon: '📈', title: 'Double-Well Potential', equation: 'y = a x<sup>4</sup> &minus; b x<sup>2</sup>', description: 'Fourth-degree polynomial exhibiting twin symmetric energy wells.', expression: 'a * Math.pow(x, 4) - b * Math.pow(x, 2)', xAxis: { label: 'x', min: -4, max: 4 }, yAxis: { label: 'Potential Energy y', min: -10, max: 15 }, sliders: [{ variable: 'a', label: 'Quartic Term (a)', min: 0.1, max: 1, value: 0.25, step: 0.05 }, { variable: 'b', label: 'Quadratic Term (b)', min: 0.5, max: 5, value: 2, step: 0.5 }] },
+            { num: 20, id: 'hyperbolic-sine', icon: '📐', title: 'Hyperbolic Sine (sinh)', equation: 'y = a sinh(kx)', description: 'Symmetric combination of growing and decaying exponentials.', expression: 'a * (Math.exp(k * x) - Math.exp(-k * x)) / 2', xAxis: { label: 'x', min: -4, max: 4 }, yAxis: { label: 'y', min: -20, max: 20 }, sliders: [{ variable: 'a', label: 'Scale Factor (a)', min: 0.5, max: 3, value: 1, step: 0.5 }, { variable: 'k', label: 'Growth Factor (k)', min: 0.2, max: 1.5, value: 0.8, step: 0.1 }] }
         ],
         Physics: [
-            {
-                id: 'projectile-motion',
-                icon: '🎯',
-                title: 'Projectile Motion',
-                description: 'Trajectory height vs. horizontal distance for launch angle & speed.',
-                expression: 'x * Math.tan(theta * Math.PI / 180) - (9.8 * x * x) / (2 * Math.pow(v0 * Math.cos(theta * Math.PI / 180), 2))',
-                xAxis: { label: 'Horizontal Distance (m)', min: 0, max: 50 },
-                yAxis: { label: 'Height (m)', min: 0, max: 30 },
-                sliders: [
-                    { variable: 'v0', label: 'Initial Speed v₀ (m/s)', min: 5, max: 40, value: 20, step: 1 },
-                    { variable: 'theta', label: 'Launch Angle θ (°)', min: 5, max: 85, value: 45, step: 1 }
-                ]
-            },
-            {
-                id: 'simple-harmonic-motion',
-                icon: '🔁',
-                title: 'Simple Harmonic Motion',
-                description: 'Position over time for a mass on a spring: x(t) = A·cos(ωt).',
-                expression: 'A * Math.cos(omega * x)',
-                xAxis: { label: 'Time (s)', min: 0, max: 10 },
-                yAxis: { label: 'Displacement', min: -5, max: 5 },
-                sliders: [
-                    { variable: 'A', label: 'Amplitude A', min: 0.5, max: 5, value: 2, step: 0.1 },
-                    { variable: 'omega', label: 'Angular Frequency ω', min: 0.5, max: 6, value: 2, step: 0.1 }
-                ]
-            },
-            {
-                id: 'ohms-law',
-                icon: '🔌',
-                title: "Ohm's Law (I vs V)",
-                description: 'Current vs. voltage for a fixed resistance: I = V / R.',
-                expression: 'x / R',
-                xAxis: { label: 'Voltage (V)', min: 0, max: 20 },
-                yAxis: { label: 'Current (A)', min: 0, max: 10 },
-                sliders: [
-                    { variable: 'R', label: 'Resistance R (Ω)', min: 1, max: 20, value: 5, step: 0.5 }
-                ]
-            }
+            { num: 21, id: 'newtons-2nd-law', icon: '🍎', title: "Newton's 2nd Law", equation: 'F = ma', description: 'Force equals mass times acceleration.', expression: 'm * x', xAxis: { label: 'Acceleration (a)', min: 0, max: 10 }, yAxis: { label: 'Force (F)', min: 0, max: 100 }, sliders: [{ variable: 'm', label: 'Mass m (kg)', min: 1, max: 10, value: 5, step: 0.5 }] },
+            { num: 22, id: 'kinematic-position', icon: '🚗', title: 'Kinematic Position', equation: 'x(t) = x<sub>0</sub> + v<sub>0</sub>t + &frac12;at<sup>2</sup>', description: 'Position of an object undergoing constant acceleration.', expression: 'x0 + v0 * x + 0.5 * a * Math.pow(x, 2)', xAxis: { label: 'Time t (s)', min: 0, max: 10 }, yAxis: { label: 'Position x (m)', min: 0, max: 100 }, sliders: [{ variable: 'x0', label: 'Initial Position x₀', min: 0, max: 20, value: 0, step: 2 }, { variable: 'v0', label: 'Initial Velocity v₀', min: 0, max: 15, value: 2, step: 1 }, { variable: 'a', label: 'Acceleration a', min: 0, max: 5, value: 1.5, step: 0.5 }] },
+            { num: 23, id: 'velocity-after-accel', icon: '🏎️', title: 'Velocity Under Acceleration', equation: 'v(t) = v<sub>0</sub> + at', description: 'Linear increase in velocity under uniform acceleration.', expression: 'v0 + a * x', xAxis: { label: 'Time t (s)', min: 0, max: 10 }, yAxis: { label: 'Velocity v (m/s)', min: 0, max: 50 }, sliders: [{ variable: 'v0', label: 'Initial Velocity v₀', min: 0, max: 20, value: 5, step: 1 }, { variable: 'a', label: 'Acceleration a', min: 0, max: 5, value: 2.5, step: 0.5 }] },
+            { num: 24, id: 'kinetic-energy', icon: '⚡', title: 'Kinetic Energy', equation: 'KE = &frac12;mv<sup>2</sup>', description: 'Energy stored in a moving body proportional to velocity squared.', expression: '0.5 * m * Math.pow(x, 2)', xAxis: { label: 'Velocity v (m/s)', min: 0, max: 20 }, yAxis: { label: 'Kinetic Energy (J)', min: 0, max: 1000 }, sliders: [{ variable: 'm', label: 'Mass m (kg)', min: 1, max: 20, value: 4, step: 1 }] },
+            { num: 25, id: 'potential-energy', icon: '🏔️', title: 'Gravitational Potential Energy', equation: 'PE = mgh', description: 'Energy possessed by an object due to its elevation above ground.', expression: 'm * 9.81 * x', xAxis: { label: 'Height h (m)', min: 0, max: 20 }, yAxis: { label: 'Potential Energy (J)', min: 0, max: 2000 }, sliders: [{ variable: 'm', label: 'Mass m (kg)', min: 1, max: 20, value: 5, step: 1 }] },
+            { num: 26, id: 'hookes-law', icon: '🪀', title: "Hooke's Law (Spring Force)", equation: 'F = &minus;kx', description: 'Restoring force exerted by an ideal elastic spring.', expression: '-k * x', xAxis: { label: 'Displacement x (m)', min: -5, max: 5 }, yAxis: { label: 'Restoring Force F (N)', min: -50, max: 50 }, sliders: [{ variable: 'k', label: 'Spring Constant k', min: 1, max: 20, value: 8, step: 1 }] },
+            { num: 27, id: 'elastic-potential-energy', icon: '🌀', title: 'Elastic Potential Energy', equation: 'U = &frac12;kx<sup>2</sup>', description: 'Energy stored within a compressed or stretched spring.', expression: '0.5 * k * Math.pow(x, 2)', xAxis: { label: 'Displacement x (m)', min: -5, max: 5 }, yAxis: { label: 'Stored Energy U (J)', min: 0, max: 150 }, sliders: [{ variable: 'k', label: 'Spring Constant k', min: 2, max: 30, value: 10, step: 2 }] },
+            { num: 28, id: 'universal-gravitation', icon: '🌌', title: 'Universal Gravitation', equation: 'F = G m<sub>1</sub>m<sub>2</sub> / r<sup>2</sup>', description: 'Gravitational attraction force between two point masses.', expression: '(G * m1 * m2) / Math.pow(x + 0.1, 2)', xAxis: { label: 'Distance r (m)', min: 0.5, max: 10 }, yAxis: { label: 'Force F', min: 0, max: 50 }, sliders: [{ variable: 'G', label: 'Gravity Factor G', min: 1, max: 10, value: 5, step: 1 }, { variable: 'm1', label: 'Mass 1 (m₁)', min: 1, max: 10, value: 4, step: 1 }, { variable: 'm2', label: 'Mass 2 (m₂)', min: 1, max: 10, value: 2, step: 1 }] },
+            { num: 29, id: 'coulombs-law', icon: '⚡', title: "Coulomb's Electrostatic Law", equation: 'F = k<sub>e</sub> |q<sub>1</sub>q<sub>2</sub>| / r<sup>2</sup>', description: 'Electrostatic force of attraction or repulsion between charges.', expression: '(ke * q1 * q2) / Math.pow(x + 0.1, 2)', xAxis: { label: 'Distance r (m)', min: 0.5, max: 10 }, yAxis: { label: 'Force F (N)', min: 0, max: 60 }, sliders: [{ variable: 'ke', label: 'Coulomb Const (k_e)', min: 1, max: 10, value: 8, step: 1 }, { variable: 'q1', label: 'Charge q₁', min: 1, max: 5, value: 2, step: 0.5 }, { variable: 'q2', label: 'Charge q₂', min: 1, max: 5, value: 3, step: 0.5 }] },
+            { num: 30, id: 'ohms-law', icon: '💡', title: "Ohm's Law", equation: 'V = IR', description: 'Voltage drop across a resistor proportional to electric current.', expression: 'R * x', xAxis: { label: 'Current I (A)', min: 0, max: 10 }, yAxis: { label: 'Voltage V (V)', min: 0, max: 100 }, sliders: [{ variable: 'R', label: 'Resistance R (Ω)', min: 1, max: 20, value: 8, step: 1 }] },
+            { num: 31, id: 'joule-heating-power', icon: '🔥', title: 'Electric Power Dissipation', equation: 'P = I<sup>2</sup>R', description: 'Thermal power dissipated in a conductor carrying current.', expression: 'R * Math.pow(x, 2)', xAxis: { label: 'Current I (A)', min: 0, max: 10 }, yAxis: { label: 'Power P (W)', min: 0, max: 400 }, sliders: [{ variable: 'R', label: 'Resistance R (Ω)', min: 1, max: 15, value: 4, step: 1 }] },
+            { num: 32, id: 'simple-pendulum-period', icon: '🔔', title: 'Simple Pendulum Period', equation: 'T = 2&pi;&radic;(L / g)', description: 'Period of oscillation of a simple gravity pendulum.', expression: '2 * Math.PI * Math.sqrt(x / g)', xAxis: { label: 'Length L (m)', min: 0.1, max: 10 }, yAxis: { label: 'Period T (s)', min: 0, max: 10 }, sliders: [{ variable: 'g', label: 'Gravity g (m/s²)', min: 1.6, max: 25, value: 9.81, step: 0.5 }] },
+            { num: 33, id: 'photon-energy', icon: '💡', title: 'Planck-Einstein Relation', equation: 'E = h f', description: 'Energy carried by a single photon proportional to frequency.', expression: 'h * x', xAxis: { label: 'Frequency f (×10¹⁴ Hz)', min: 1, max: 10 }, yAxis: { label: 'Energy E (eV)', min: 0, max: 10 }, sliders: [{ variable: 'h', label: 'Planck Factor h', min: 0.2, max: 2, value: 0.8, step: 0.1 }] },
+            { num: 34, id: 'relativistic-energy', icon: '⚛️', title: 'Relativistic Energy Factor', equation: 'E = &gamma;m c<sup>2</sup>', description: 'Lorentz factor expansion of rest energy at near-light speeds.', expression: 'm * 10 / Math.sqrt(Math.max(0.01, 1 - Math.pow(x / 10, 2)))', xAxis: { label: 'Velocity v (0.1c)', min: 0, max: 9.5 }, yAxis: { label: 'Total Energy E', min: 0, max: 100 }, sliders: [{ variable: 'm', label: 'Rest Mass m', min: 1, max: 5, value: 2, step: 0.5 }] },
+            { num: 35, id: 'wave-speed', icon: '🌊', title: 'Wave Equation', equation: 'v = f &lambda;', description: 'Speed of wave propagation given frequency and wavelength.', expression: 'f * x', xAxis: { label: 'Wavelength λ (m)', min: 0.1, max: 10 }, yAxis: { label: 'Wave Speed v (m/s)', min: 0, max: 100 }, sliders: [{ variable: 'f', label: 'Frequency f (Hz)', min: 1, max: 20, value: 8, step: 1 }] },
+            { num: 36, id: 'centripetal-acceleration', icon: '🎡', title: 'Centripetal Acceleration', equation: 'a<sub>c</sub> = v<sup>2</sup> / r', description: 'Inward acceleration experienced by an object in uniform circular motion.', expression: 'Math.pow(x, 2) / r', xAxis: { label: 'Tangential Speed v', min: 0, max: 20 }, yAxis: { label: 'Centripetal Accel a_c', min: 0, max: 100 }, sliders: [{ variable: 'r', label: 'Radius r (m)', min: 1, max: 10, value: 4, step: 0.5 }] },
+            { num: 37, id: 'doppler-frequency-shift', icon: '📢', title: 'Doppler Frequency Shift', equation: 'f\' = f [v / (v &minus; v<sub>s</sub>)]', description: 'Apparent frequency shift for an approaching acoustic wave source.', expression: 'f * (340 / (340 - x + 0.01))', xAxis: { label: 'Source Speed v_s (m/s)', min: 0, max: 300 }, yAxis: { label: 'Observed Frequency f\'', min: 200, max: 2000 }, sliders: [{ variable: 'f', label: 'Source Freq f (Hz)', min: 200, max: 1000, value: 440, step: 20 }] },
+            { num: 38, id: 'capacitor-stored-energy', icon: '🔋', title: 'Capacitor Energy Storage', equation: 'U = &frac12; C V<sup>2</sup>', description: 'Electrostatic energy stored in a charged capacitor.', expression: '0.5 * C * Math.pow(x, 2)', xAxis: { label: 'Voltage V (V)', min: 0, max: 20 }, yAxis: { label: 'Stored Energy U (J)', min: 0, max: 500 }, sliders: [{ variable: 'C', label: 'Capacitance C (F)', min: 0.5, max: 5, value: 2, step: 0.5 }] },
+            { num: 39, id: 'radioactive-decay-law', icon: '☢️', title: 'Radioactive Decay Law', equation: 'N(t) = N<sub>0</sub> e<sup>&minus;&lambda;t</sup>', description: 'Exponential decrease of unstable nuclear isotopes over time.', expression: 'N0 * Math.exp(-lambda * x)', xAxis: { label: 'Time t (years)', min: 0, max: 20 }, yAxis: { label: 'Nuclei Count N(t)', min: 0, max: 1000 }, sliders: [{ variable: 'N0', label: 'Initial Nuclei N₀', min: 100, max: 1000, value: 800, step: 50 }, { variable: 'lambda', label: 'Decay Const λ', min: 0.05, max: 0.5, value: 0.2, step: 0.05 }] },
+            { num: 40, id: 'torque-equation', icon: '🔧', title: 'Torque Magnitude', equation: '&tau; = r F sin(&theta;)', description: 'Rotational force component perpendicular to lever arm.', expression: 'r * F * Math.sin(x * Math.PI / 180)', xAxis: { label: 'Angle θ (degrees)', min: 0, max: 180 }, yAxis: { label: 'Torque τ (N·m)', min: 0, max: 100 }, sliders: [{ variable: 'r', label: 'Lever Arm r (m)', min: 0.5, max: 5, value: 2, step: 0.5 }, { variable: 'F', label: 'Force F (N)', min: 5, max: 50, value: 25, step: 5 }] }
+        ],
+        Chemistry: [
+            { num: 41, id: 'ideal-gas-law', icon: '🎈', title: 'Ideal Gas Law (P vs V)', equation: 'P = nRT / V', description: 'Inverse relationship between gas pressure and volume at constant temperature.', expression: '(n * 8.314 * T) / (x + 0.1)', xAxis: { label: 'Volume V (L)', min: 0.5, max: 20 }, yAxis: { label: 'Pressure P (kPa)', min: 0, max: 500 }, sliders: [{ variable: 'n', label: 'Moles n', min: 0.5, max: 5, value: 2, step: 0.5 }, { variable: 'T', label: 'Temperature T (K)', min: 200, max: 500, value: 300, step: 10 }] },
+            { num: 42, id: 'boyles-law', icon: '🪗', title: "Boyle's Isothermal Law", equation: 'P = k / V', description: 'Isothermal inverse proportion of gas volume to applied pressure.', expression: 'k / (x + 0.1)', xAxis: { label: 'Volume V', min: 0.5, max: 10 }, yAxis: { label: 'Pressure P', min: 0, max: 100 }, sliders: [{ variable: 'k', label: 'Constant k', min: 10, max: 200, value: 80, step: 10 }] },
+            { num: 43, id: 'charles-law', icon: '🌡️', title: "Charles's Isobaric Law", equation: 'V = k T', description: 'Isobaric direct proportional expansion of gas volume with absolute temperature.', expression: 'k * x', xAxis: { label: 'Temperature T (K)', min: 100, max: 600 }, yAxis: { label: 'Volume V (L)', min: 0, max: 30 }, sliders: [{ variable: 'k', label: 'Proportionality k', min: 0.01, max: 0.1, value: 0.05, step: 0.01 }] },
+            { num: 44, id: 'gay-lussacs-law', icon: '🔥', title: "Gay-Lussac's Law", equation: 'P = k T', description: 'Direct relationship between gas pressure and temperature at constant volume.', expression: 'k * x', xAxis: { label: 'Temperature T (K)', min: 100, max: 600 }, yAxis: { label: 'Pressure P (atm)', min: 0, max: 5 }, sliders: [{ variable: 'k', label: 'Constant k', min: 0.002, max: 0.02, value: 0.008, step: 0.001 }] },
+            { num: 45, id: 'arrhenius-equation', icon: '🧪', title: 'Arrhenius Reaction Rate', equation: 'k = A e<sup>&minus;E<sub>a</sub>/(RT)</sup>', description: 'Temperature dependence of chemical reaction rate constants.', expression: 'A * Math.exp(-Ea / (8.314 * (x + 273.15)))', xAxis: { label: 'Temperature (°C)', min: 0, max: 200 }, yAxis: { label: 'Rate Constant k', min: 0, max: 10 }, sliders: [{ variable: 'A', label: 'Pre-exponential A', min: 10, max: 100, value: 50, step: 5 }, { variable: 'Ea', label: 'Activation Energy Ea (kJ/mol)', min: 10, max: 50, value: 25, step: 5 }] },
+            { num: 46, id: 'ph-definition', icon: '🧪', title: 'pH Scale Definition', equation: 'pH = &minus;log<sub>10</sub>[H<sup>+</sup>]', description: 'Logarithmic scale of hydronium ion concentration in aqueous solution.', expression: '-Math.log10(x + 1e-14)', xAxis: { label: 'Concentration (M)', min: 0.00001, max: 0.1 }, yAxis: { label: 'pH Value', min: 1, max: 14 }, sliders: [] },
+            { num: 47, id: 'henderson-hasselbalch', icon: '🧪', title: 'Henderson-Hasselbalch Buffer', equation: 'pH = pK<sub>a</sub> + log([A<sup>&minus;</sup>]/[HA])', description: 'Buffer solution pH response to conjugate base to weak acid ratio.', expression: 'pKa + Math.log10((x + 0.001) / 1)', xAxis: { label: 'Base/Acid Ratio', min: 0.01, max: 10 }, yAxis: { label: 'Buffer pH', min: 2, max: 10 }, sliders: [{ variable: 'pKa', label: 'Acid Dissociation pKa', min: 3, max: 8, value: 4.75, step: 0.25 }] },
+            { num: 48, id: 'gibbs-free-energy', icon: '⚡', title: 'Gibbs Free Energy vs Temp', equation: '&Delta;G = &Delta;H &minus; T&Delta;S', description: 'Thermodynamic spontaneity criteria shifting with temperature.', expression: 'dH - x * dS', xAxis: { label: 'Temperature T (K)', min: 0, max: 800 }, yAxis: { label: 'ΔG (kJ/mol)', min: -100, max: 100 }, sliders: [{ variable: 'dH', label: 'Enthalpy ΔH (kJ/mol)', min: -50, max: 50, value: 20, step: 5 }, { variable: 'dS', label: 'Entropy ΔS (kJ/mol·K)', min: -0.2, max: 0.2, value: 0.08, step: 0.01 }] },
+            { num: 49, id: 'gibbs-equilibrium', icon: '⚖️', title: 'Gibbs & Equilibrium', equation: '&Delta;G = &minus;RT ln(K)', description: 'Free energy relationship with chemical equilibrium constant K.', expression: '-8.314 * 298 * Math.log(x + 0.001) * 0.001', xAxis: { label: 'Equilibrium Constant K', min: 0.01, max: 20 }, yAxis: { label: 'ΔG° (kJ/mol)', min: -20, max: 20 }, sliders: [] },
+            { num: 50, id: 'first-order-kinetics', icon: '⏱️', title: 'First-Order Kinetics Decay', equation: '[A]<sub>t</sub> = [A]<sub>0</sub> e<sup>&minus;kt</sup>', description: 'Concentration attenuation in first-order chemical reaction dynamics.', expression: 'A0 * Math.exp(-k * x)', xAxis: { label: 'Time t (s)', min: 0, max: 20 }, yAxis: { label: 'Concentration [A] (M)', min: 0, max: 10 }, sliders: [{ variable: 'A0', label: 'Initial [A]₀', min: 1, max: 10, value: 8, step: 1 }, { variable: 'k', label: 'Rate Constant k', min: 0.05, max: 0.5, value: 0.2, step: 0.05 }] },
+            { num: 51, id: 'second-order-kinetics', icon: '⏱️', title: 'Second-Order Kinetics Decay', equation: '1/[A]<sub>t</sub> = 1/[A]<sub>0</sub> + kt', description: 'Reciprocal concentration curve characteristic of second-order reactions.', expression: '1 / ((1 / A0) + k * x)', xAxis: { label: 'Time t (s)', min: 0, max: 20 }, yAxis: { label: 'Concentration [A] (M)', min: 0, max: 10 }, sliders: [{ variable: 'A0', label: 'Initial [A]₀', min: 1, max: 10, value: 8, step: 1 }, { variable: 'k', label: 'Rate Constant k', min: 0.05, max: 0.5, value: 0.1, step: 0.02 }] },
+            { num: 52, id: 'zero-order-kinetics', icon: '⏱️', title: 'Zero-Order Kinetics', equation: '[A]<sub>t</sub> = [A]<sub>0</sub> &minus; kt', description: 'Constant linear reaction rate independent of reactant concentration.', expression: 'Math.max(0, A0 - k * x)', xAxis: { label: 'Time t (s)', min: 0, max: 20 }, yAxis: { label: 'Concentration [A] (M)', min: 0, max: 10 }, sliders: [{ variable: 'A0', label: 'Initial [A]₀', min: 2, max: 10, value: 8, step: 1 }, { variable: 'k', label: 'Rate Constant k', min: 0.1, max: 1, value: 0.4, step: 0.1 }] },
+            { num: 53, id: 'nernst-equation', icon: '🔋', title: 'Nernst Electrochemical Potential', equation: 'E = E&deg; &minus; (RT/nF) ln(Q)', description: 'Cell potential dependence on reaction quotient Q under non-standard state.', expression: 'E0 - ((8.314 * 298) / (n * 96485)) * Math.log(x + 0.001)', xAxis: { label: 'Reaction Quotient Q', min: 0.001, max: 100 }, yAxis: { label: 'Cell Potential E (V)', min: -0.2, max: 1.5 }, sliders: [{ variable: 'E0', label: 'Standard Potential E°', min: 0.2, max: 1.5, value: 1.1, step: 0.1 }, { variable: 'n', label: 'Transferred Electrons n', min: 1, max: 4, value: 2, step: 1 }] },
+            { num: 54, id: 'beer-lambert-law', icon: '🌈', title: 'Beer-Lambert Absorption', equation: 'A = &epsilon; b c', description: 'Linear relation between optical absorbance and solute concentration.', expression: 'eb * x', xAxis: { label: 'Concentration c (mM)', min: 0, max: 10 }, yAxis: { label: 'Absorbance A', min: 0, max: 3 }, sliders: [{ variable: 'eb', label: 'Molar Absorptivity (εb)', min: 0.05, max: 0.5, value: 0.25, step: 0.05 }] },
+            { num: 55, id: 'clausius-clapeyron', icon: '☁️', title: 'Clausius-Clapeyron Vapor Pressure', equation: 'P = P<sub>0</sub> e<sup>&minus;&Delta;H<sub>vap</sub>/(RT)</sup>', description: 'Non-linear increase of equilibrium vapor pressure with temperature.', expression: 'P0 * Math.exp(-dH / (8.314 * (x + 273.15)))', xAxis: { label: 'Temperature (°C)', min: 0, max: 120 }, yAxis: { label: 'Vapor Pressure P (kPa)', min: 0, max: 200 }, sliders: [{ variable: 'P0', label: 'Reference Scale P₀', min: 1000, max: 50000, value: 10000, step: 2000 }, { variable: 'dH', label: 'Heat of Vap ΔH (kJ/mol)', min: 20, max: 50, value: 35, step: 5 }] },
+            { num: 56, id: 'raoult-law', icon: '💧', title: "Raoult's Solution Law", equation: 'P<sub>soln</sub> = &chi;<sub>solv</sub> P&deg;', description: 'Vapor pressure lowering proportional to solvent mole fraction.', expression: 'x * P0', xAxis: { label: 'Solvent Mole Fraction χ', min: 0, max: 1 }, yAxis: { label: 'Vapor Pressure P (mmHg)', min: 0, max: 100 }, sliders: [{ variable: 'P0', label: 'Pure Vapor Pressure P°', min: 10, max: 100, value: 76, step: 5 }] },
+            { num: 57, id: 'osmotic-pressure', icon: '🧫', title: 'Osmotic Pressure Formula', equation: '&Pi; = i M R T', description: 'Osmotic pressure as a function of solute molarity M.', expression: 'i * x * 0.08206 * 298', xAxis: { label: 'Molarity M (mol/L)', min: 0, max: 2 }, yAxis: { label: 'Osmotic Pressure Π (atm)', min: 0, max: 100 }, sliders: [{ variable: 'i', label: 'van t Hoff Factor i', min: 1, max: 4, value: 2, step: 1 }] },
+            { num: 58, id: 'half-life-concentration', icon: '⏳', title: 'Half-Life Concentration Decay', equation: 'C(t) = C<sub>0</sub> (1/2)<sup>t / t<sub>1/2</sub></sup>', description: 'Sequential halved concentration step attenuation model over time.', expression: 'C0 * Math.pow(0.5, x / thalf)', xAxis: { label: 'Elapsed Time t', min: 0, max: 30 }, yAxis: { label: 'Concentration C(t)', min: 0, max: 100 }, sliders: [{ variable: 'C0', label: 'Initial Conc C₀', min: 10, max: 100, value: 80, step: 10 }, { variable: 'thalf', label: 'Half-Life t_1/2', min: 1, max: 10, value: 5, step: 1 }] },
+            { num: 59, id: 'combustion-heat-release', icon: '🔥', title: 'Specific Heat Energy Transfer', equation: 'Q = m c &Delta;T', description: 'Thermal enthalpy transfer proportional to temperature change ΔT.', expression: 'm * c * x', xAxis: { label: 'Temp Delta ΔT (°C)', min: 0, max: 50 }, yAxis: { label: 'Heat Q (kJ)', min: 0, max: 500 }, sliders: [{ variable: 'm', label: 'Mass m (kg)', min: 1, max: 10, value: 2, step: 1 }, { variable: 'c', label: 'Specific Heat c (kJ/kg·K)', min: 1, max: 5, value: 4.18, step: 0.1 }] },
+            { num: 60, id: 'braggs-law', icon: '💎', title: "Bragg's Diffraction Law", equation: '&lambda; = (2d/n) sin(&theta;)', description: 'X-ray diffraction condition off crystal lattice planes.', expression: '(2 * d / n) * Math.sin(x * Math.PI / 180)', xAxis: { label: 'Incidence Angle θ (°)', min: 0, max: 90 }, yAxis: { label: 'Wavelength λ (Å)', min: 0, max: 5 }, sliders: [{ variable: 'd', label: 'Lattice Spacing d (Å)', min: 1, max: 5, value: 2.8, step: 0.2 }, { variable: 'n', label: 'Diffraction Order n', min: 1, max: 3, value: 1, step: 1 }] }
         ],
         Biology: [
-            {
-                id: 'logistic-population-growth',
-                icon: '🌱',
-                title: 'Logistic Population Growth',
-                description: 'Population size approaching carrying capacity K over time.',
-                expression: 'K / (1 + ((K - N0) / N0) * Math.exp(-r * x))',
-                xAxis: { label: 'Time (t)', min: 0, max: 50 },
-                yAxis: { label: 'Population', min: 0, max: 1000 },
-                sliders: [
-                    { variable: 'K', label: 'Carrying Capacity K', min: 100, max: 1000, value: 500, step: 50 },
-                    { variable: 'N0', label: 'Initial Population N₀', min: 1, max: 100, value: 10, step: 1 },
-                    { variable: 'r', label: 'Growth Rate r', min: 0.05, max: 1, value: 0.3, step: 0.05 }
-                ]
-            },
-            {
-                id: 'michaelis-menten',
-                icon: '🧬',
-                title: 'Michaelis–Menten Kinetics',
-                description: 'Enzyme reaction rate vs. substrate concentration: v = Vmax·[S] / (Km + [S]).',
-                expression: '(Vmax * x) / (Km + x)',
-                xAxis: { label: 'Substrate Concentration [S]', min: 0, max: 50 },
-                yAxis: { label: 'Reaction Rate v', min: 0, max: 12 },
-                sliders: [
-                    { variable: 'Vmax', label: 'Max Rate Vmax', min: 1, max: 15, value: 10, step: 0.5 },
-                    { variable: 'Km', label: 'Michaelis Constant Km', min: 1, max: 30, value: 8, step: 1 }
-                ]
-            },
-            {
-                id: 'exponential-bacterial-growth',
-                icon: '🦠',
-                title: 'Exponential Bacterial Growth',
-                description: 'Colony size over time before resources become limiting: N = N₀·e^(rt).',
-                expression: 'N0 * Math.exp(r * x)',
-                xAxis: { label: 'Time (hours)', min: 0, max: 10 },
-                yAxis: { label: 'Population', min: 0, max: 1000 },
-                sliders: [
-                    { variable: 'N0', label: 'Initial Population N₀', min: 1, max: 100, value: 20, step: 1 },
-                    { variable: 'r', label: 'Growth Rate r', min: 0.1, max: 1.5, value: 0.6, step: 0.05 }
-                ]
-            }
+            { num: 61, id: 'michaelis-menten', icon: '🧬', title: 'Michaelis-Menten Kinetics', equation: 'v = (V<sub>max</sub> [S]) / (K<sub>m</sub> + [S])', description: 'Enzyme catalysis velocity approaching saturation Vmax.', expression: '(Vmax * x) / (Km + x)', xAxis: { label: 'Substrate [S] (mM)', min: 0, max: 20 }, yAxis: { label: 'Velocity v (μmol/min)', min: 0, max: 100 }, sliders: [{ variable: 'Vmax', label: 'Max Rate Vmax', min: 10, max: 100, value: 80, step: 5 }, { variable: 'Km', label: 'Michaelis Const Km', min: 0.5, max: 10, value: 3, step: 0.5 }] },
+            { num: 62, id: 'exponential-pop-growth', icon: '🧫', title: 'Exponential Population Growth', equation: 'N(t) = N<sub>0</sub> e<sup>rt</sup>', description: 'Unconstrained biological population expansion.', expression: 'N0 * Math.exp(r * x)', xAxis: { label: 'Time t (generations)', min: 0, max: 10 }, yAxis: { label: 'Population N', min: 0, max: 1000 }, sliders: [{ variable: 'N0', label: 'Initial Pop N₀', min: 10, max: 100, value: 20, step: 10 }, { variable: 'r', label: 'Growth Rate r', min: 0.1, max: 0.8, value: 0.4, step: 0.05 }] },
+            { num: 63, id: 'logistic-pop-growth', icon: '🌲', title: 'Logistic Population Growth', equation: 'dN/dt = rN (1 &minus; N/K)', description: 'Population growth rate constrained by carrying capacity K.', expression: 'r * x * (1 - x / K)', xAxis: { label: 'Population N', min: 0, max: 1000 }, yAxis: { label: 'Growth Rate dN/dt', min: 0, max: 150 }, sliders: [{ variable: 'r', label: 'Intrinsic Rate r', min: 0.1, max: 1, value: 0.5, step: 0.1 }, { variable: 'K', label: 'Carrying Capacity K', min: 200, max: 1000, value: 800, step: 50 }] },
+            { num: 64, id: 'hardy-weinberg', icon: '🧬', title: 'Hardy-Weinberg Genotype Frequencies', equation: 'Frequency = 2pq = 2p(1 &minus; p)', description: 'Heterozygote carrier frequency as a function of allele frequency p.', expression: '2 * x * (1 - x)', xAxis: { label: 'Allele Frequency p', min: 0, max: 1 }, yAxis: { label: 'Heterozygote Freq (2pq)', min: 0, max: 0.6 }, sliders: [] },
+            { num: 65, id: 'ficks-first-law', icon: '🧫', title: "Fick's Diffusion Law", equation: 'J = &minus;D (&Delta;C / &Delta;x)', description: 'Molar flux density across biological membranes via concentration gradient.', expression: 'D * x', xAxis: { label: 'Concentration Gradient ΔC', min: 0, max: 10 }, yAxis: { label: 'Diffusion Flux J', min: 0, max: 50 }, sliders: [{ variable: 'D', label: 'Diffusion Coeff D', min: 0.5, max: 10, value: 4, step: 0.5 }] },
+            { num: 66, id: 'lineweaver-burk', icon: '📐', title: 'Lineweaver-Burk Double Reciprocal', equation: '1/v = (K<sub>m</sub>/V<sub>max</sub>)(1/[S]) + 1/V<sub>max</sub>', description: 'Linearized enzymatic reciprocal transformation for competitive inhibition analysis.', expression: '(Km / Vmax) * x + (1 / Vmax)', xAxis: { label: 'Reciprocal Substrate 1/[S]', min: 0, max: 5 }, yAxis: { label: 'Reciprocal Velocity 1/v', min: 0, max: 0.5 }, sliders: [{ variable: 'Km', label: 'Michaelis Const Km', min: 1, max: 10, value: 4, step: 1 }, { variable: 'Vmax', label: 'Max Rate Vmax', min: 10, max: 50, value: 20, step: 5 }] },
+            { num: 67, id: 'allometric-scaling', icon: '🐘', title: "Kleiber's Metabolic Law", equation: 'B = B<sub>0</sub> M<sup>3/4</sup>', description: 'Basal metabolic scaling with organism body mass raised to 3/4 power.', expression: 'B0 * Math.pow(x, 0.75)', xAxis: { label: 'Body Mass M (kg)', min: 0.1, max: 100 }, yAxis: { label: 'Metabolic Rate B (W)', min: 0, max: 200 }, sliders: [{ variable: 'B0', label: 'Normalization B₀', min: 1, max: 10, value: 3.5, step: 0.5 }] },
+            { num: 68, id: 'nernst-membrane-potential', icon: '⚡', title: 'Nernst Membrane Potential', equation: 'E<sub>ion</sub> = 61.5 log<sub>10</sub>([Ion]<sub>out</sub> / [Ion]<sub>in</sub>)', description: 'Equilibrium electrical potential across cellular membrane for a given ion.', expression: '61.5 * Math.log10(x / Kin)', xAxis: { label: 'Extracellular Conc [Ion]_out', min: 1, max: 150 }, yAxis: { label: 'Nernst Potential (mV)', min: -100, max: 100 }, sliders: [{ variable: 'Kin', label: 'Intracellular Conc [Ion]_in', min: 5, max: 150, value: 140, step: 5 }] },
+            { num: 69, id: 'hill-equation', icon: '🧬', title: 'Hill Equation (Cooperativity)', equation: 'Y = [L]<sup>n</sup> / (K<sub>d</sub> + [L]<sup>n</sup>)', description: 'Cooperative ligand binding fraction saturation curve.', expression: 'Math.pow(x, n) / (Kd + Math.pow(x, n))', xAxis: { label: 'Ligand Conc [L]', min: 0, max: 10 }, yAxis: { label: 'Fractional Saturation Y', min: 0, max: 1 }, sliders: [{ variable: 'n', label: 'Hill Coefficient n', min: 1, max: 4, value: 2.8, step: 0.2 }, { variable: 'Kd', label: 'Dissociation Const Kd', min: 1, max: 50, value: 10, step: 2 }] },
+            { num: 70, id: 'species-area-relationship', icon: '🏝️', title: 'Species-Area Island Relationship', equation: 'S = c A<sup>z</sup>', description: 'Ecological species richness scaling with habitat land area.', expression: 'c * Math.pow(x, z)', xAxis: { label: 'Island Area A (km²)', min: 1, max: 100 }, yAxis: { label: 'Species Count S', min: 0, max: 150 }, sliders: [{ variable: 'c', label: 'Taxon Scale c', min: 1, max: 20, value: 5, step: 1 }, { variable: 'z', label: 'Slope Exponent z', min: 0.1, max: 0.5, value: 0.25, step: 0.05 }] },
+            { num: 71, id: 'lotka-volterra-prey', icon: '🐰', title: 'Lotka-Volterra Prey Isocline', equation: 'dx/dt = &alpha; x &minus; &beta; x y', description: 'Prey population growth differential dynamic under predator encounters.', expression: 'alpha * x - beta * x * 10', xAxis: { label: 'Prey Density x', min: 0, max: 100 }, yAxis: { label: 'Prey Growth Rate dx/dt', min: -50, max: 100 }, sliders: [{ variable: 'alpha', label: 'Prey Birth Rate α', min: 0.1, max: 2, value: 0.8, step: 0.1 }, { variable: 'beta', label: 'Predation Rate β', min: 0.01, max: 0.1, value: 0.03, step: 0.01 }] },
+            { num: 72, id: 'lotka-volterra-predator', icon: '🦊', title: 'Lotka-Volterra Predator Isocline', equation: 'dy/dt = &delta; x y &minus; &gamma; y', description: 'Predator growth rate dependent on prey availability x.', expression: 'delta * x * 20 - gamma * 20', xAxis: { label: 'Prey Density x', min: 0, max: 100 }, yAxis: { label: 'Predator Growth Rate dy/dt', min: -50, max: 100 }, sliders: [{ variable: 'delta', label: 'Conversion Efficiency δ', min: 0.005, max: 0.05, value: 0.02, step: 0.005 }, { variable: 'gamma', label: 'Predator Mortality γ', min: 0.1, max: 1, value: 0.4, step: 0.1 }] },
+            { num: 73, id: 'q10-temperature-coeff', icon: '🌡️', title: 'Q10 Temperature Coefficient', equation: 'R<sub>2</sub> = R<sub>1</sub> Q<sub>10</sub><sup>(&Delta;T/10)</sup>', description: 'Metabolic rate acceleration over a 10°C thermal increment.', expression: 'R1 * Math.pow(Q10, x / 10)', xAxis: { label: 'Temp Increase ΔT (°C)', min: 0, max: 30 }, yAxis: { label: 'Metabolic Rate R₂', min: 0, max: 100 }, sliders: [{ variable: 'R1', label: 'Base Rate R₁', min: 5, max: 20, value: 10, step: 1 }, { variable: 'Q10', label: 'Q10 Coefficient', min: 1.5, max: 3.5, value: 2.2, step: 0.1 }] },
+            { num: 74, id: 'shannon-diversity', icon: '🦋', title: 'Shannon-Wiener Entropy Component', equation: 'H_i = &minus;p<sub>i</sub> ln(p<sub>i</sub>)', description: 'Uncertainty contribution per species toward biodiversity index.', expression: '-x * Math.log(x + 1e-10) - (1 - x) * Math.log(1 - x + 1e-10)', xAxis: { label: 'Proportion p₁', min: 0.01, max: 0.99 }, yAxis: { label: 'Entropy H\'', min: 0, max: 1 }, sliders: [] },
+            { num: 75, id: 'hemoglobin-saturation', icon: '🩸', title: 'Oxygen-Hemoglobin Dissociation', equation: 'S = x<sup>2.8</sup> / (P<sub>50</sub><sup>2.8</sup> + x<sup>2.8</sup>)', description: 'Sigmoidal oxygen binding saturation of hemoglobin.', expression: 'Math.pow(x, 2.8) / (Math.pow(P50, 2.8) + Math.pow(x, 2.8))', xAxis: { label: 'Oxygen Pressure pO₂ (mmHg)', min: 0, max: 100 }, yAxis: { label: 'O₂ Saturation S', min: 0, max: 1 }, sliders: [{ variable: 'P50', label: 'P50 Pressure (mmHg)', min: 15, max: 40, value: 26, step: 1 }] },
+            { num: 76, id: 'gfr-starling-forces', icon: '🩺', title: 'Glomerular Filtration Rate (GFR)', equation: 'GFR = K<sub>f</sub> (P<sub>GC</sub> &minus; P<sub>BS</sub> &minus; &pi;<sub>GC</sub>)', description: 'Renal filtration flux dictated by net Starling hydrostatic and oncotic pressures.', expression: 'Kf * (x - Pbs - piGC)', xAxis: { label: 'Capillary Pressure P_GC (mmHg)', min: 30, max: 80 }, yAxis: { label: 'GFR (mL/min)', min: 0, max: 200 }, sliders: [{ variable: 'Kf', label: 'Filtration Coeff K_f', min: 5, max: 20, value: 12.5, step: 0.5 }, { variable: 'Pbs', label: 'Bowmans Pressure P_BS', min: 5, max: 25, value: 15, step: 1 }, { variable: 'piGC', label: 'Oncotic Pressure π_GC', min: 15, max: 35, value: 25, step: 1 }] },
+            { num: 77, id: 'cardiac-output', icon: '❤️', title: 'Cardiac Output Equation', equation: 'CO = HR &times; SV', description: 'Volumetric blood flow pumped by the heart per minute.', expression: 'x * SV / 1000', xAxis: { label: 'Heart Rate HR (bpm)', min: 40, max: 180 }, yAxis: { label: 'Cardiac Output CO (L/min)', min: 0, max: 25 }, sliders: [{ variable: 'SV', label: 'Stroke Volume SV (mL)', min: 40, max: 120, value: 70, step: 5 }] },
+            { num: 78, id: 'photosynthetic-light-response', icon: '🍃', title: 'Photosynthetic Light Response', equation: 'P = (P<sub>max</sub> I) / (I<sub>k</sub> + I)', description: 'Photosynthetic carbon assimilation saturation curve vs irradiance I.', expression: '(Pmax * x) / (Ik + x)', xAxis: { label: 'Irradiance I (μmol/m²·s)', min: 0, max: 1000 }, yAxis: { label: 'Assimilation P (μmol/m²·s)', min: 0, max: 40 }, sliders: [{ variable: 'Pmax', label: 'Max Photosynthesis Pmax', min: 10, max: 50, value: 30, step: 2 }, { variable: 'Ik', label: 'Half-Saturating Light I_k', min: 50, max: 300, value: 150, step: 10 }] },
+            { num: 79, id: 'enzyme-thermal-denaturation', icon: '🧪', title: 'Enzyme Thermal Inactivation', equation: 'Activity = A<sub>0</sub> e<sup>&minus;k<sub>d</sub> t</sup>', description: 'Irreversible thermal denaturation of enzymatic catalytic function over time.', expression: 'A0 * Math.exp(-kd * x)', xAxis: { label: 'Exposure Time t (min)', min: 0, max: 60 }, yAxis: { label: 'Remaining Activity (%)', min: 0, max: 100 }, sliders: [{ variable: 'A0', label: 'Initial Activity A₀', min: 50, max: 100, value: 100, step: 5 }, { variable: 'kd', label: 'Denaturation Rate k_d', min: 0.01, max: 0.2, value: 0.05, step: 0.01 }] },
+            { num: 80, id: 'surface-area-volume-ratio', icon: '🔬', title: 'Surface Area to Volume Ratio', equation: 'Ratio = 3 / r', description: 'Geometric constraint on cell size driving metabolic transport limitations.', expression: '3 / (x + 0.1)', xAxis: { label: 'Cell Radius r (μm)', min: 0.5, max: 20 }, yAxis: { label: 'SA/V Ratio (μm⁻¹)', min: 0, max: 6 }, sliders: [] }
         ]
     };
 </script>
