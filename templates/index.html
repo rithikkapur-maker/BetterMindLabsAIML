@@ -92,6 +92,9 @@
         currentView: 'landing', // 'landing' or 'app'
         isCheckingAuth: true,
 
+        // Left Sidebar Navigation State
+        sidebarCollapsed: false,
+
         // Global Theme State: 'midnight', 'matrix', 'solar', 'neon', 'abyss', 'aurora'
         activeTheme: 'midnight',
 
@@ -105,6 +108,17 @@
         user: null,
         session: null,
         showAuthModal: false,
+
+        // Feedback Session States
+        showFeedbackModal: false,
+        feedbackCategories: ['General', 'Bug Report', 'Feature Request', 'Praise'],
+        feedbackCategory: 'General',
+        feedbackName: '',
+        feedbackEmail: '',
+        feedbackMessage: '',
+        feedbackLoading: false,
+        feedbackError: '',
+        feedbackSuccess: false,
         authTab: 'login', // 'login' or 'signup'
         authEmail: '',
         authPassword: '',
@@ -754,9 +768,125 @@
                     this.sessionWeakGaps.push(questionText);
                 }
             }
+        },
+
+        async submitFeedback() {
+            if(!this.feedbackMessage.trim()) {
+                this.feedbackError = 'Please enter your feedback before submitting.';
+                return;
+            }
+            this.feedbackError = '';
+            this.feedbackLoading = true;
+            try {
+                let response = await fetch('/api/send-feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: this.feedbackMessage,
+                        name: this.feedbackName,
+                        email: this.feedbackEmail,
+                        category: this.feedbackCategory
+                    })
+                });
+                let data = await response.json();
+                if(response.ok && data.success) {
+                    this.feedbackSuccess = true;
+                    this.feedbackMessage = '';
+                    this.feedbackName = '';
+                    this.feedbackEmail = '';
+                    this.feedbackCategory = 'General';
+                } else {
+                    this.feedbackError = data.error || 'Failed to send feedback. Please try again.';
+                }
+            } catch (e) {
+                this.feedbackError = 'Network error. Could not reach the feedback service.';
+            } finally {
+                this.feedbackLoading = false;
+            }
         }
     }"
     x-init="initSupabase()">
+
+    <!-- Claude-style Collapsible Left Sidebar -->
+    <div :class="sidebarCollapsed ? 'w-[76px]' : 'w-64'" class="fixed top-0 left-0 h-screen z-40 flex flex-col bg-slate-950/95 border-r border-white/10 backdrop-blur-xl transition-all duration-300 ease-out">
+        <div class="flex items-center justify-between gap-2 px-4 py-5 border-b border-white/10 shrink-0">
+            <button @click="currentView = 'landing'" class="flex items-center gap-2.5 overflow-hidden group">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-sm font-black text-white shrink-0 shadow-lg shadow-purple-900/40 group-hover:scale-105 transition-transform">E</div>
+                <span x-show="!sidebarCollapsed" x-cloak class="font-extrabold text-white text-sm whitespace-nowrap">EduMorph AI</span>
+            </button>
+            <button @click="sidebarCollapsed = !sidebarCollapsed" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-all shrink-0" :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1">
+            <button @click="currentView = 'landing'" :class="currentView === 'landing' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all" :title="sidebarCollapsed ? 'Home' : ''">
+                <span class="text-base shrink-0">🏠</span>
+                <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Home</span>
+            </button>
+
+            <button @click="currentView = 'app'" :class="currentView === 'app' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all" :title="sidebarCollapsed ? 'Workspace' : ''">
+                <span class="text-base shrink-0">🧠</span>
+                <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Workspace</span>
+            </button>
+
+            <div x-show="!sidebarCollapsed" x-cloak class="px-3 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Modes</div>
+            <div x-show="sidebarCollapsed" x-cloak class="border-t border-white/10 my-3 mx-1"></div>
+
+            <button @click="currentView = 'app'; activeMode = 'alchemist';" :class="(currentView === 'app' && activeMode === 'alchemist') ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all" :title="sidebarCollapsed ? 'Concept Alchemist' : ''">
+                <span class="text-base shrink-0">🔮</span>
+                <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Concept Alchemist</span>
+            </button>
+
+            <button @click="currentView = 'app'; activeMode = 'forge';" :class="(currentView === 'app' && activeMode === 'forge') ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all" :title="sidebarCollapsed ? 'Evaluation Forge' : ''">
+                <span class="text-base shrink-0">⚒️</span>
+                <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Evaluation Forge</span>
+            </button>
+
+            <button @click="currentView = 'app'; activeMode = 'research';" :class="(currentView === 'app' && activeMode === 'research') ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all" :title="sidebarCollapsed ? 'Research Briefs' : ''">
+                <span class="text-base shrink-0">🔬</span>
+                <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Research Briefs</span>
+            </button>
+
+            <button @click="currentView = 'app'; activeMode = 'graphing';" :class="(currentView === 'app' && activeMode === 'graphing') ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all" :title="sidebarCollapsed ? 'Graphing Lab' : ''">
+                <span class="text-base shrink-0">📊</span>
+                <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Graphing Lab</span>
+            </button>
+        </nav>
+
+        <div class="px-3 pb-2 shrink-0">
+            <button @click="showFeedbackModal = true; feedbackSuccess = false; feedbackError = '';" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition-all" :title="sidebarCollapsed ? 'Send Feedback' : ''">
+                <span class="text-base shrink-0">💬</span>
+                <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Send Feedback</span>
+            </button>
+        </div>
+
+        <div class="border-t border-white/10 p-3 shrink-0">
+            <template x-if="user">
+                <div class="space-y-1">
+                    <div class="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl overflow-hidden">
+                        <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-xs font-bold text-white uppercase shadow-md shrink-0" x-text="(user.user_metadata?.full_name || user.email || 'U').charAt(0)"></div>
+                        <div x-show="!sidebarCollapsed" x-cloak class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-200 truncate" x-text="user.user_metadata?.full_name || user.email"></p>
+                            <p class="text-[10px] text-slate-500">Free plan</p>
+                        </div>
+                    </div>
+                    <button @click="handleSignOut()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 transition-all" :title="sidebarCollapsed ? 'Sign Out' : ''">
+                        <span class="text-base shrink-0">🚪</span>
+                        <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Sign Out</span>
+                    </button>
+                </div>
+            </template>
+            <template x-if="!user">
+                <button @click="showAuthModal = true" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-xs px-3 py-2.5 rounded-xl shadow-lg shadow-purple-900/40 transition-all" :title="sidebarCollapsed ? 'Sign In / Register' : ''">
+                    <span x-show="!sidebarCollapsed" x-cloak class="whitespace-nowrap">Sign In / Register</span>
+                    <span x-show="sidebarCollapsed" x-cloak>→</span>
+                </button>
+            </template>
+        </div>
+    </div>
+
+    <div :class="sidebarCollapsed ? 'pl-[76px]' : 'pl-64'" class="transition-all duration-300 ease-out">
 
     <div class="fixed top-4 right-4 flex items-center gap-3 z-50">
         <template x-if="user">
@@ -836,8 +966,8 @@
                     </div>
                 </div>
 
-                <div class="max-w-6xl mx-auto px-4 py-16 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="glass-panel p-8 rounded-3xl border border-white/10 glass-panel-hover group relative overflow-hidden">
+                <div class="max-w-7xl mx-auto px-4 py-16 relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div @click="currentView = 'app'; activeMode = 'alchemist';" class="glass-panel p-8 rounded-3xl border border-white/10 glass-panel-hover group relative overflow-hidden cursor-pointer">
                         <div class="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-3xl mb-6 group-hover:scale-110 transition-transform">
                             🔮
                         </div>
@@ -851,7 +981,7 @@
                         </div>
                     </div>
 
-                    <div class="glass-panel p-8 rounded-3xl border border-white/10 glass-panel-hover group relative overflow-hidden">
+                    <div @click="currentView = 'app'; activeMode = 'forge';" class="glass-panel p-8 rounded-3xl border border-white/10 glass-panel-hover group relative overflow-hidden cursor-pointer">
                         <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-3xl mb-6 group-hover:scale-110 transition-transform">
                             ⚒️
                         </div>
@@ -865,7 +995,7 @@
                         </div>
                     </div>
 
-                    <div class="glass-panel p-8 rounded-3xl border border-white/10 glass-panel-hover group relative overflow-hidden">
+                    <div @click="currentView = 'app'; activeMode = 'research';" class="glass-panel p-8 rounded-3xl border border-white/10 glass-panel-hover group relative overflow-hidden cursor-pointer">
                         <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-3xl mb-6 group-hover:scale-110 transition-transform">
                             🔬
                         </div>
@@ -875,6 +1005,20 @@
                         </p>
                         <div class="inline-flex items-center text-xs font-semibold text-cyan-400 gap-1.5 group-hover:translate-x-1 transition-transform">
                             <span>Academic Synthesis Engine</span>
+                            <span>→</span>
+                        </div>
+                    </div>
+
+                    <div @click="currentView = 'app'; activeMode = 'graphing';" class="glass-panel p-8 rounded-3xl border border-white/10 glass-panel-hover group relative overflow-hidden cursor-pointer">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-3xl mb-6 group-hover:scale-110 transition-transform">
+                            📊
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-3">Graphing Lab</h3>
+                        <p class="text-slate-300 text-sm leading-relaxed mb-6">
+                            Explore a curated library of Math, Chemistry, Physics, and Biology graphs with live slider-driven simulations across every subject.
+                        </p>
+                        <div class="inline-flex items-center text-xs font-semibold text-amber-400 gap-1.5 group-hover:translate-x-1 transition-transform">
+                            <span>Cross-Subject Graph Library</span>
                             <span>→</span>
                         </div>
                     </div>
@@ -1348,6 +1492,65 @@
             </div>
         </div>
     </div>
+
+    <!-- Feedback Session Modal -->
+    <div x-show="showFeedbackModal" x-transition class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
+        <div class="glass-panel w-full max-w-md p-8 rounded-3xl border border-white/15 shadow-2xl relative space-y-5" @click.outside="showFeedbackModal = false">
+            <button @click="showFeedbackModal = false" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg">✕</button>
+
+            <div>
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">💬 Send Feedback</h3>
+                <p class="text-xs text-slate-400 mt-1">Your message goes straight to the EduMorph AI team's inbox.</p>
+            </div>
+
+            <template x-if="feedbackSuccess">
+                <div class="text-center space-y-4 py-4">
+                    <div class="text-4xl">✅</div>
+                    <p class="text-sm font-semibold text-emerald-300">Thanks! Your feedback has been sent.</p>
+                    <button @click="showFeedbackModal = false; feedbackSuccess = false;" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-all">Close</button>
+                </div>
+            </template>
+
+            <template x-if="!feedbackSuccess">
+                <form @submit.prevent="submitFeedback()" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Category</label>
+                        <select x-model="feedbackCategory" class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-purple-500">
+                            <template x-for="cat in feedbackCategories" :key="cat">
+                                <option :value="cat" x-text="cat"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Your Feedback <span class="text-rose-400">*</span></label>
+                        <textarea x-model="feedbackMessage" rows="5" placeholder="Tell us what's working, what's broken, or what you'd love to see next..." class="w-full bg-slate-950 border border-white/15 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Name (optional)</label>
+                            <input type="text" x-model="feedbackName" placeholder="Jane Doe" class="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email (optional)</label>
+                            <input type="email" x-model="feedbackEmail" placeholder="jane@example.com" class="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+
+                    <div x-show="feedbackError" class="p-3 bg-rose-950/80 border border-rose-800 rounded-xl text-rose-300 text-xs" x-text="feedbackError"></div>
+
+                    <button type="submit" :disabled="feedbackLoading" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-900/40 transition-all disabled:opacity-60">
+                        <span x-show="!feedbackLoading">Send Feedback</span>
+                        <span x-show="feedbackLoading" class="animate-pulse">Sending...</span>
+                    </button>
+                </form>
+            </template>
+        </div>
+    </div>
+
+    </div>
+    <!-- /sidebar-offset wrapper -->
 
     <script>
         function initReactBitsCanvases(alpineScope) {
